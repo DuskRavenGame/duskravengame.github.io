@@ -141,10 +141,10 @@ classes.assassin = {
   // Extra choices at every BREAKTHROUGH (floor 150 and beyond), beside the ones every
   // class has. One for each build: it multiplies that build's own damage again.
   breakthroughs: [
-    { id: "strongerVenom", name: "Stronger Venom", text: "Venom Dagger: poison damage x1.3", multiply: { poison: 1.3 } },
+    { id: "strongerVenom", name: "Stronger Venom", text: "Venom Dagger: poison damage x1.6", multiply: { poison: 1.6 } },
     { id: "finerPoint", name: "Finer Point", text: "Stiletto: critical hit damage x1.5", multiply: { stilettoCrit: 1.5 } },
-    { id: "deeperShadow", name: "Deeper Shadow", text: "Shadow Blade: damage of the hit after a dodge x1.5", multiply: { counter: 1.5 } },
-    { id: "perfectAmbush", name: "Perfect Ambush", text: "Ambush damage x1.5", multiply: { ambush: 1.5 } }
+    { id: "deeperShadow", name: "Deeper Shadow", text: "Shadow Blade: damage of the hit after a dodge x1.6", multiply: { counter: 1.6 } },
+    { id: "perfectAmbush", name: "Perfect Ambush", text: "Ambush damage x2", multiply: { ambush: 2 } }
   ],
 
   // Special moves on a cooldown, put in the slots that open on floors 10, 35 and 75
@@ -208,10 +208,10 @@ let assassinAmbushReady = false;
 // Shadow Blade: has a dodge set up a stronger next hit?
 let assassinCounterReady = false;
 
-// Runs at the start of every fight
+// Runs at the start of every fight. (A Shadow Blade's dodge that set up a stronger hit
+// keeps it for the next monster: a fight that ends first must not waste it.)
 function assassinStartFight() {
   assassinAmbushReady = true;
-  assassinCounterReady = false;
 }
 
 function assassinAttack() {

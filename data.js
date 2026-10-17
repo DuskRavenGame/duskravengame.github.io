@@ -232,6 +232,7 @@ const resetTable = [
   { what: "Level and experience", fall: "kept", ascend: "lost", legend: "lost" },
   { what: "Skills", fall: "kept", ascend: "lost (your saved build is remembered)", legend: "lost" },
   { what: "The blacksmith's work", fall: "kept", ascend: "lost", legend: "lost" },
+  { what: "A Beast Tamer's pets, and its Essence", fall: "kept", ascend: "kept, but every pet loses half its levels", legend: "kept, but every pet loses half its levels" },
   { what: "Town upgrades with levels", fall: "kept", ascend: "lost", legend: "lost" },
   { what: "Town helpers", fall: "kept", ascend: "kept", legend: "kept" },
   { what: "Best floors, and milestones reached", fall: "kept", ascend: "kept", legend: "lost" },
@@ -290,11 +291,45 @@ const legendUnlocks = [
   // earns, so it is something to play towards for a long time.
   { id: "secondClimber", name: "The Second Climber", text: "Two classes climb at once. Pick one other class above the fight: it goes on climbing its own tower, by itself, while you play.", bonus: { secondClimber: 1 }, cost: 30, growth: 1, maxLevel: 1 },
   // (a class with  unlock: "beastTamer"  in its file is hidden until this is bought)
-  { id: "beastTamer", name: "The Beast Tamer", text: "Opens the eighth class: a tamer who fights beside a wolf pack, a bear or a hawk.", bonus: {}, cost: 12, growth: 1, maxLevel: 1 }
+  { id: "beastTamer", name: "The Beast Tamer", text: "Opens the eighth class, a legendary one: a tamer with a wolf pack, a bear and a hawk, far stronger than the others. It walks its own path, takes nothing from your other classes, and earns totems that can make them stronger.", bonus: {}, cost: 12, growth: 1, maxLevel: 1 }
 ];
 
 // How many turns the second climber saves up before it plays them (see game/companion.js)
 const companionBatch = 60;
+
+// ----- The Beast Tamer's own path: totems -----
+// The Beast Tamer is a game of its own (the owner, 17 October 2026). A class with
+// "ownPath: true" in its file (only the Tamer) takes NOTHING from the other classes:
+// no fame upgrades, no legend unlocks, no bestiary gold, no Second Climber. Where
+// another class earns fame, it earns TOTEMS, and becoming a legend pays totems too.
+// Totems buy two kinds of thing, from one purse:
+//   for: "tamer"   - makes the Beast Tamer stronger (its fame upgrades, but stronger)
+//   for: "others"  - makes every OTHER class stronger: the Tamer's gift to the account
+// Other classes earn a few totems too, from the bosses of the Wild Reaches (the Tamer's
+// tower). Rules in game/bonuses.js ("Totems").
+//
+// TO ADD ONE: add a line. Like fameUpgrades: each level multiplies again, costs
+// "growth" times more, and a maxLevel of 0 means no top level.
+const totemUpgrades = [
+  { id: "wildMight", for: "tamer", name: "Wild Might", text: "The Beast Tamer: all your damage x1.25.", multiply: { damage: 1.25 }, cost: 5, growth: 1.4, maxLevel: 0 },
+  { id: "wildHide", for: "tamer", name: "Wild Hide", text: "The Beast Tamer: health and armor x1.25.", multiply: { health: 1.25, armor: 1.25 }, cost: 5, growth: 1.4, maxLevel: 0 },
+  { id: "wildLore", for: "tamer", name: "Lore of the Wild", text: "The Beast Tamer: experience x1.25 and gold x1.2.", multiply: { experience: 1.25, gold: 1.2 }, cost: 4, growth: 1.4, maxLevel: 0 },
+  { id: "wildTraining", for: "tamer", name: "Wild Training", text: "The Beast Tamer: the trainer's companions are x1.2 stronger.", multiply: { gear: 1.2 }, cost: 6, growth: 1.4, maxLevel: 0 },
+  { id: "wolfTotem", for: "others", name: "Wolf Totem", text: "Every other class: all damage x1.1.", multiply: { damage: 1.1 }, cost: 10, growth: 1.6, maxLevel: 0 },
+  { id: "bearTotem", for: "others", name: "Bear Totem", text: "Every other class: health and armor x1.1.", multiply: { health: 1.1, armor: 1.1 }, cost: 10, growth: 1.6, maxLevel: 0 },
+  { id: "hawkTotem", for: "others", name: "Hawk Totem", text: "Every other class: experience and gold x1.1.", multiply: { experience: 1.1, gold: 1.1 }, cost: 8, growth: 1.6, maxLevel: 0 }
+];
+
+// A Beast Tamer who becomes a legend is paid this many totems for every legend mark
+// another class would have been paid
+const totemsPerLegendMark = 15;
+
+// Another class that beats a boss in the Wild Reaches is paid this share of the boss's
+// fame again, as totems (on top of the fame)
+const wildBossTotems = 0.5;
+
+// The tower of the class that walks its own path
+const wildTower = "beasttamer";
 
 // ----- The week's modifier -----
 // One of these is in force each week, for every class in every tower, and they come
@@ -566,6 +601,60 @@ const forgeCostGrowth = 1.3;
 const forgeBasePower = 5;
 const forgeTierPower = 1.9;
 const forgePlusPower = 0.06;
+
+// ----- Pets (the Beast Tamer, in place of the blacksmith) -----
+// A pet's steps cost experience the way the blacksmith's cost gold (forgeCost and
+// forgeCostGrowth above). Every kill gives the bonded pet petExperienceShare of the gold
+// it drops as experience (1 means as much), and petEssenceShare of it as Essence, which
+// trains any pet. Rules in "Pets" in game/equipment.js.
+const petExperienceShare = 1;
+const petEssenceShare = 0.25;
+
+// ----- Catching pets -----
+// Every ordinary monster a tamer beats, of a kind that has a kit in classes/pets.js, joins
+// it with this chance. A rare monster is petRareCatch times likelier, and never comes out
+// below Rare.
+// A tamer keeps one of each kind. Catching one it has again gives the better rarity of the
+// two; if it was no better, it is kept as a COPY, and copies merge into the next rarity
+// (the Merge button on the Pets card): petMergeCopies for a Common, twice that for an
+// Uncommon, three times for a Rare, and so on. A Mythic pet has nothing to merge into,
+// so its copies are let go for petReleaseShare of what its next level costs, in Essence. A new pet starts at petCatchStep of the bonded pet's level,
+// so moving to a new pet never means raising it from nothing.
+const petCatchChance = 0.01;
+// ...but a kind it has already joins only this often: the rarities are a long chase
+const petCatchAgain = 0.001;
+// A boss can be tamed too, once the bestiary has a rank for it (petBossKnown: 1 is 10
+// kills), with this chance each time it is beaten. It never comes out below Rare.
+const petBossCatch = 0.03;
+const petBossKnown = 1;
+// A BOND TRIAL: a boss the bestiary knows at rank petTrialKnown (2 is 100 kills) can be
+// hunted (the Hunt row). The next time it is met it fights at petTrialPower times its
+// health and attack, and if it is beaten it joins the tamer for certain.
+const petTrialKnown = 2;
+const petTrialPower = 1.5;
+const petRareCatch = 10;
+const petReleaseShare = 0.5;
+const petMergeCopies = 3;
+const petCatchStep = 0.75;
+
+// HUNTING A KIND: a tamer can track one kind of monster (the Hunt row on the Pets card).
+// In its tower that kind turns up petTrackWeight times as often as each of the others.
+// And every rank the bestiary has for a kind (10, 100 and 1,000 kills: bestiaryRanks)
+// makes it petBestiaryCatch likelier to be caught (0.5 means +50% a rank).
+const petTrackWeight = 3;
+const petBestiaryCatch = 0.5;
+
+// The rarities a catch rolls, from the commonest. "power" multiplies the pet's attack and
+// health, "chance" is how often a catch comes out as it (they add up to 1). A rare
+// monster rolls only from Rare up. Mythic is never rolled: only merging reaches it.
+const petRarities = [
+  { name: "Common", power: 1, chance: 0.6 },
+  { name: "Uncommon", power: 1.15, chance: 0.25 },
+  { name: "Rare", power: 1.3, chance: 0.1 },
+  { name: "Epic", power: 1.5, chance: 0.04 },
+  { name: "Legendary", power: 1.75, chance: 0.01 },
+  { name: "Mythic", power: 2, chance: 0 }
+];
 
 // ----- Limits, and what happens past them -----
 // Nothing can be bought only a set number of times. But a chance cannot go past

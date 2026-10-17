@@ -157,8 +157,8 @@ classes.ranger = {
   // class has. One for each build: it multiplies that build's own damage again.
   breakthroughs: [
     { id: "truerAim", name: "Truer Aim", text: "Longbow: critical shot damage x1.5", multiply: { longbowCrit: 1.5 } },
-    { id: "fasterHands", name: "Faster Hands", text: "Shortbow: arrow damage x1.4", multiply: { shortbow: 1.4 } },
-    { id: "heavierBolts", name: "Heavier Bolts", text: "Crossbow: bolt damage x1.4", multiply: { crossbow: 1.4 } }
+    { id: "fasterHands", name: "Faster Hands", text: "Shortbow: arrow damage x1.5", multiply: { shortbow: 1.5 } },
+    { id: "heavierBolts", name: "Heavier Bolts", text: "Crossbow: bolt damage x1.5", multiply: { crossbow: 1.5 } }
   ],
 
   // Special moves on a cooldown, put in the slots that open on floors 10, 35 and 75

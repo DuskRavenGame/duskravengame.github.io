@@ -148,10 +148,10 @@ classes.warlock = {
   // Extra choices at every BREAKTHROUGH (floor 150 and beyond), beside the ones every
   // class has. One for each build: it multiplies that build's own damage again.
   breakthroughs: [
-    { id: "purerArcana", name: "Purer Arcana", text: "Arcane Tome: the extra damage of critical hits x1.5", multiply: { arcaneCrit: 1.5 } },
-    { id: "deeperVoid", name: "Deeper Void", text: "Void Tome: spell damage x1.4", multiply: { void: 1.4 } },
-    { id: "louderEchoes", name: "Louder Echoes", text: "Rune Tome: echo damage x1.5", multiply: { echo: 1.5 } },
-    { id: "hungrierSouls", name: "Hungrier Souls", text: "attack x1.3 and health x1.3", multiply: { attack: 1.3, health: 1.3 } }
+    { id: "purerArcana", name: "Purer Arcana", text: "Arcane Tome: the extra damage of critical hits x1.7", multiply: { arcaneCrit: 1.7 } },
+    { id: "deeperVoid", name: "Deeper Void", text: "Void Tome: spell damage x1.5", multiply: { void: 1.5 } },
+    { id: "louderEchoes", name: "Louder Echoes", text: "Rune Tome: echo damage x1.6", multiply: { echo: 1.6 } },
+    { id: "hungrierSouls", name: "Hungrier Souls", text: "attack x1.4 and health x1.4", multiply: { attack: 1.4, health: 1.4 } }
   ],
 
   // Special moves on a cooldown, put in the slots that open on floors 10, 35 and 75

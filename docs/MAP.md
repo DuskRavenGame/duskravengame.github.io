@@ -108,6 +108,33 @@ echoes. So, before adding anything that multiplies:
 - what feeds it? If a skill, a boon or anything else that can be bought forever does,
   it is a bracket that never stops growing: every build must then have the same one.
 
+**The one exception: the Beast Tamer walks its own path** (17 October 2026, the owner's
+call). It has `ownPath: true` and takes nothing from the account: no fame upgrades, no
+legend unlocks, no bestiary gold, no Second Climber. It earns totems where others earn
+fame (`gainFame`, `totemMultiplier` in game/bonuses.js; `totemUpgrades` in data.js), and
+is deliberately far stronger than the other classes: compare it with itself, not with
+them. It also fights with pets (`fightsWithPets: true`, Tamer Mode phase 1): the tamer
+never attacks, it has no blacksmith, and `forgeLevel` returns the bonded pet's step, so
+a pet's level runs through `forgePower` and every "gear" multiplier like a weapon would.
+A kill feeds the bonded pet experience equal to its gold, and Essence trains any pet
+("Pets" in game/equipment.js). Pets are caught (Tamer Mode phase 2, "Catching pets" in
+data.js): every pet's kit is a block in `classes/pets.js`, and the pet bonded with is
+`pet`, while `weapon` is its PATH's starter (bear, wolf or hawk). So a caught pet uses
+its path's perks, boons, relics and abilities, and only its skill and passive are its
+own; the passive is its `bonus`, added to the class's base (`petBonus`). Rarity
+multiplies the pet's attack and health (`petRarityPower`). All 72 monsters and bosses
+have a kit; a boss is tamed only once the bestiary knows it (`petCatchNow`), or for
+certain by winning its Bond Trial (a hunted boss known at rank 2 fights x1.5: `bondTrial`). A tamer can
+hunt one kind (`trackedPet`: it turns up `petTrackWeight` times as often, and bestiary
+ranks raise its catch chance). A kind already caught joins at `petCatchAgain`, a tenth of
+a new one's chance; a catch no better than the pet is a copy, and copies merge into the
+next rarity (3 for a Common, 6 for an Uncommon...; Mythic only by merging). The bot's
+`allpets` climbs with each pet, `pets=a+b` with some; a pet it is told to bond with stays
+Common, so the petcheck compares kits, not luck. The plan for the rest is `docs/design/tamer-mode/`. Its three companions should stay within about 50 floors of each other. What totems
+buy for the OTHER classes is across the board, so it keeps the rule above. The
+`for: "others"` totems are a second fame for them: if the other classes run away, look
+there (the Tamer earned about 96,000 totems in 100 bot hours).
+
 `MAP-WORDS.md` marks every word that has a source with no top level.
 [design/14](design/14-combat-loop-research.md) proposes the brackets every build should
 have, and how long a fight should last.
@@ -159,6 +186,8 @@ about 4% a floor, so 20% more damage is worth about 5 floors.
 | A stat that does nothing (health past floor 40, Toughness) | Monster attack grew as fast as monster health | `probe` prints the hero's health against a monster's hit, floor by floor; `skillcheck` shows a skill that speeds the climb when skipped |
 | A choice that only keeps you alive (Toughness, Trial of Endurance, the health perks at floors 50, 75 and 100) | A climb stops at the clock, and only damage beats a clock. Health buys about 0.4 of what the same attack buys, so every health-only choice was a trap: 10 to 37 floors behind its neighbours, and Toughness cost 7 floors when bought | It carries a share of attack as well (12 October 2026). When adding a defence choice, give it attack too, and run `perkcheck` or the bot's `skip=` to see it is level |
 | Measuring a class with a guard by its middle hit, or a tower by a class sent there from its first minute | Half a Warden's hits land behind a guard, so the middle one said 40 hits to die. A fresh class in an away tower gets nowhere, which says nothing about the tower | `edge` reports the average hit; `home=15` plays at home first |
+| A build whose damage comes in a burst every few turns, judged by a rule made for one-hit kills (the hawk, 17 October 2026) | The sweep stops at the first fight longer than `cruiseTurns` (2). The hawk's spell came every 3 turns, so after every death its next run started about 200 floors below its reach, and it was ascended while still sweeping back up: floor 414 in 100 bot hours with the usual 10-minute stall, 700 with a 30-minute one. Played patiently it was the strongest pet, which hid it | `quickFight` in a class file (game/fights.js `quickFightTurns`): a magic pet's fight won by its first spell counts as quick; `tools/check.js` 3h0b. When a build looks weak, run the bot at `stall=1800` too: if only it gains, look at the sweep. (Measured on the whole field on 17 October 2026: with 30 minutes of patience every build gains 10 to 30 floors, median +24; the bursty ones, Stiletto, Longbow, Shadow Blade, Zealot shield, Club, Holy Tome and Sword, gain 50 to 76. The 2-turn sweep trims them a little more; at the usual 10 minutes they sit inside the field, so it was left alone.) The bot's `lives` prints each death and the floor the next run is on |
+| A breakthrough that multiplies one part of a build's damage, beside Conqueror (attack x1.5) that multiplies all of it (Purer Arcana x1.5 on only the EXTRA of a critical hit; a player saw it, 17 October 2026) | Every breakthrough is offered with Conqueror, every time. A multiplier on a part is worth less than its number, so x1.5 on a part loses to x1.5 on everything at every depth | The bot's `btcheck`: each choice against Conqueror on the same line. Measured 17 October 2026, most build picks were below it (the x1.3 damage-over-time ones by up to a quarter); all were raised until each build's own pick is 1.00 or more of Conqueror, and each class-wide pick is the best for at least one build. Rage hardly answers its multiplier (fights at the edge are short), so Red Mist carries attack x1.3. Conqueror does little for the Spiked Shield, Tower Shield and Holy Tome, so their picks sit above it. A new breakthrough: run `btcheck` and keep it at 1.00 to about 1.1 |
 | Flat numbers (+3 armor at floor 75) | A flat number is worth nothing against one that grows 4% a floor | Give a percentage or a multiplier. Flat numbers only on the first ten floors |
 | A buff that works but cannot be seen (Phoenix Feather) | It wrote one line with another name in it | Say the thing's own name in the log, and mark it used on the page |
 | Something checked at one moment that can be changed for free just before it. Four of them, closed on 13 October 2026: experience was worked out on the fall from the perks held at that instant; a newly slotted ability was ready at once; potions could be bought while a fight went on, so the belt was no limit; and a reload or a class switch started the room again, with the monster healed and every ability ready | Each rule looked at what the class held NOW, and what it held could be swapped, bought or reloaded at no cost a moment earlier | Earn it as it happens, or make the change cost what it would have earned: experience is added floor by floor (`runExperience`, `deathPayout`), a slotted ability starts on its cooldown (`equipAbility`), potions drunk keep their place on the belt (`potionRoom`), and the fight is saved with the class (`packFight`). `tools/check.js` section 3k tries each one. When a rule reads something the player can change freely, ask what stops them changing it just before the rule looks |

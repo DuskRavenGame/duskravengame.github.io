@@ -341,6 +341,11 @@ Pass the easy one (194).
   number does not help it: its hit after a dodge already kills, and what it waits for is
   the dodge, which stops at 60%. Raising Umbra from x4 to x5.5 gave nothing and was thrown
   away. It needs a change to how it fights, not to what it multiplies.
+  **17 October 2026:** the change was this. A dodge set up the stronger hit, and the next
+  fight threw it away (assassinStartFight cleared it), so in fights of 2 to 6 turns many
+  dodges were wasted. It now carries to the next monster, as a pet's spell does: 298 to
+  314 in 100 hours (three runs each). Counting a fight won by its first counter as quick
+  for the sweep (as the hawk's is) added nothing more, and was thrown away.
 - **The Longbow** reached 397 in one run of four (342, 333 and 348 in the others) and
   kills bosses in 3 to 5 turns. Watch it; one run is not enough to cut it.
 - **Bosses fall fast to the glass builds** (Longbow, Crossbow, Shortbow, Axe, Club: 3 to 9

@@ -3,9 +3,10 @@
 Testing tools. The game never loads anything in this folder.
 They need Microsoft Edge (installed on Windows) and Git Bash.
 
-Every run opens its own hidden Edge. `tools/run.sh` lets only 3 be open at once and
-makes the rest wait their turn, because many at once crashed the PC. To change the
-limit for one command: `LLOEGRYS_MAX_EDGE=2 bash tools/run.sh ...`
+Every run opens its own hidden Edge. `tools/run.sh` lets only 2 be open at once and
+makes the rest wait their turn, because many at once crashed the PC, and 3 ate the CPU
+(the owner set 2 on 17 October 2026). To lower it for one command:
+`LLOEGRYS_MAX_EDGE=1 bash tools/run.sh ...`
 
 ## The balance bot
 
@@ -72,6 +73,19 @@ many builds before believing a gap.
 bash tools/run.sh sim "h=30,every,perkcheck,pf=50+75+100,c=warden"
 ```
 
+`btcheck` does it for breakthroughs, without a climb for each: every build climbs once,
+is kept as it was on its deepest floor, and fights 3000 turns there with each choice
+added once more. It prints how many times faster it kills with each, beside Conqueror
+(attack x1.5). The figures of one climb move a lot (Conqueror from x1.2 to x1.8), but
+the RATIO of a breakthrough to Conqueror on the same line is steady: compare that. A
+build's own breakthrough below Conqueror is a choice nobody should make. Each crit build's
+pick ties it exactly (its crits are certain by then); the damage-over-time picks are far
+below it (17 October 2026).
+
+```
+bash tools/run.sh sim "h=100,btcheck,c=warlock"
+```
+
 `edge` says how fights go at the deepest floors a class can reach: turns to win an
 ordinary fight and a boss, and how many ordinary hits bring the hero down (from the
 AVERAGE hit: a class with a guard takes half its hits behind it, and the middle hit lies).
@@ -90,6 +104,22 @@ build looks wrong, ask the bot what is killing it before changing its numbers:
 
 ```
 bash tools/run.sh sim "h=22,every,ascend,killers,c=ranger"
+```
+
+When a build climbs well but falls short of its best, `lives` prints, for the last hours,
+each death (time into the ascension, floor, level after) and every two minutes where
+the class is and how its fight goes. That is how the hawk's slow sweep was found: after
+each death its next run started 200 floors too low. Run a doubtful build at `stall=1800`
+too: if only it gains from the patience, look at what a run does between deaths.
+
+The Beast Tamer's pets (classes/pets.js): `bond=rhino` climbs bonded with one pet from
+the start, and `allpets` climbs once with every pet. Its pets should stay within about
+50 floors of each other in 100 hours. (Not `pet=`: the tower option `t=` would match
+inside it.)
+
+```
+bash tools/run.sh sim "h=100,ascend,allpets,c=beasttamer"
+bash tools/run.sh sim "h=100,ascend,lives,bond=hawk,c=beasttamer"
 ```
 
 ## The pre-upload check

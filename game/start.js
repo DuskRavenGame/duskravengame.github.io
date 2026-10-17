@@ -27,7 +27,8 @@ function playTimeAway(seconds) {
       experience: experienceEarned,
       level: level,
       gold: gold + bank,
-      bestFloor: bestFloor
+      bestFloor: bestFloor,
+      caught: petsCaught.length
     };
   }
   awayTotals.seconds = awayTotals.seconds + seconds;
@@ -51,6 +52,10 @@ function playTimeAway(seconds) {
   report = report + " and " + big(gold + bank - awayTotals.gold) + " gold.";
   if (bestFloor > awayTotals.bestFloor) {
     report = report + " New best floor: " + bestFloor + "!";
+  }
+  // (a tamer's catches, and the better rarities it caught again)
+  if (petsCaught.length > awayTotals.caught) {
+    report = report + " Caught: " + petsCaught.slice(awayTotals.caught).join(", ") + ".";
   }
 
   // (the second climber, if there is one, was climbing too: see game/companion.js)
@@ -168,6 +173,7 @@ buildClassButtons();
 buildRoomPips();
 buildTownList();
 buildFameList();
+buildTotemList();
 buildLegendList();
 buildResetTable();
 buildTowerList();
@@ -178,6 +184,7 @@ loadSettings();
 showSaveProblem();
 resumeOrStartEncounter();
 tellAboutSkillReset();
+tellAboutTamerRestart();
 if (fameWasRefunded) {
   say("Ascension has changed: fame and its upgrades are now shared by all your classes. All your fame has been given back to spend again (Ascension).");
 }

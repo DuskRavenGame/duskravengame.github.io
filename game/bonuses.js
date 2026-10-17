@@ -5,10 +5,20 @@
 
 // ----- Adding up bonuses -----
 function baseBonus(stat) {
+  let total = 0;
   if (currentClass().base[stat] !== undefined) {
-    return currentClass().base[stat];
+    total = currentClass().base[stat];
   }
-  return 0;
+  return total + petBonus(stat);
+}
+
+// The passive of the pet the tamer is bonded with (its "bonus" in classes/pets.js)
+function petBonus(stat) {
+  if (currentClass().fightsWithPets !== true || petKits[pet] === undefined) {
+    return 0;
+  }
+  let bonus = petKits[pet].bonus[stat];
+  return bonus === undefined ? 0 : bonus;
 }
 
 // ----- Milestones and breakthroughs -----
@@ -111,7 +121,7 @@ function trophyMultiplier(stat) {
 // trophies, and the week's modifier.
 // The stats are damage, attack, health, armor, experience, gold, gear and fame.
 function multiplier(stat) {
-  return fameMultiplier(stat) * perkMultiplier(stat) * trophyMultiplier(stat) * weeklyMultiplier(stat) * relicMultiplier(stat);
+  return fameMultiplier(stat) * totemMultiplier(stat) * perkMultiplier(stat) * trophyMultiplier(stat) * weeklyMultiplier(stat) * relicMultiplier(stat);
 }
 
 // What the relics held multiply (only legendary relics multiply anything: see data.js)
@@ -212,9 +222,14 @@ function fameLevel(id) {
   return fameLevels[id];
 }
 
-// All fame is earned through here, so the page can say how fast it is coming in
+// All fame is earned through here, so the page can say how fast it is coming in.
+// A class on its own path earns totems in its place (see "Totems" below).
 function gainFame(amount) {
-  fame = fame + amount;
+  if (onOwnPath()) {
+    totems = totems + amount;
+  } else {
+    fame = fame + amount;
+  }
   ascensionFame = ascensionFame + amount;
 }
 
@@ -244,11 +259,12 @@ function fameUpgradeIsUnlocked(item) {
 }
 
 // How many times the account has ascended: every class's ascensions added together
+// (but for a class on its own path, which has nothing to do with fame)
 function totalAscensions() {
-  let total = ascensions;
+  let total = onOwnPath() ? 0 : ascensions;
 
   for (let className in classSaves) {
-    if (className !== playerClass && classSaves[className].ascensions !== undefined) {
+    if (className !== playerClass && !classes[className].ownPath && classSaves[className].ascensions !== undefined) {
       total = total + classSaves[className].ascensions;
     }
   }
@@ -285,6 +301,9 @@ function fameLevelInEffect(id) {
 // three levels of "x1.25 attack" is 1.25 x 1.25 x 1.25 = x1.95.
 function fameMultiplier(stat) {
   let total = 1;
+  if (onOwnPath()) {
+    return total;
+  }
 
   for (let item of fameUpgrades) {
     if (item.multiply !== undefined && item.multiply[stat] !== undefined) {
@@ -298,6 +317,9 @@ function fameMultiplier(stat) {
 // For fame upgrades that add something instead, like extra starting levels
 function fameAdd(stat) {
   let total = 0;
+  if (onOwnPath()) {
+    return total;
+  }
 
   for (let item of fameUpgrades) {
     if (item.add !== undefined && item.add[stat] !== undefined) {
@@ -306,6 +328,67 @@ function fameAdd(stat) {
   }
 
   return total;
+}
+
+// ----- Totems: the Beast Tamer's own path -----
+// A class with "ownPath: true" in its file takes nothing from the other classes, and
+// earns totems where they earn fame (gainFame above). Totems belong to the account,
+// like fame. What they buy (totemUpgrades in data.js) is either for the Tamer or for
+// every other class, and works in full at once: there is no catching up.
+let totems = 0;
+let totemLevels = {};
+
+function onOwnPath() {
+  return currentClass().ownPath === true;
+}
+
+function totemLevel(id) {
+  if (totemLevels[id] === undefined) {
+    return 0;
+  }
+  return totemLevels[id];
+}
+
+function totemCost(item) {
+  return Math.ceil(item.cost * Math.pow(item.growth, totemLevel(item.id)));
+}
+
+function totemUpgradeIsMaxed(item) {
+  return item.maxLevel > 0 && totemLevel(item.id) >= item.maxLevel;
+}
+
+function buyTotemUpgrade(item) {
+  if (!totemUpgradeIsMaxed(item) && totems >= totemCost(item)) {
+    totems = totems - totemCost(item);
+    totemLevels[item.id] = totemLevel(item.id) + 1;
+    recalcStats();
+    updateScreen();
+  }
+}
+
+// Does this totem upgrade work for the class being played?
+function totemIsForMe(item) {
+  return (item.for === "tamer") === onOwnPath();
+}
+
+function totemMultiplier(stat) {
+  let total = 1;
+
+  for (let item of totemUpgrades) {
+    if (totemIsForMe(item) && item.multiply[stat] !== undefined) {
+      total = total * Math.pow(item.multiply[stat], totemLevel(item.id));
+    }
+  }
+
+  return total;
+}
+
+// A boss of the Wild Reaches beaten by another class pays totems as well as fame
+function wildBossTotemsAt(bossFloor) {
+  if (tower !== wildTower || onOwnPath()) {
+    return 0;
+  }
+  return bossFameAt(bossFloor) * wildBossTotems;
 }
 
 // The floor that must be reached before the class can ascend (see data.js).
@@ -383,6 +466,8 @@ function startClassOver() {
 
   // So is the blacksmith's work, which was paid for with gold: back to the first tier
   forgeLevels = { weapon: 0, armor: 0 };
+  // ...and a class that fights with pets loses half of each pet's steps (game/equipment.js)
+  petsStartOver();
 
   // What is kept: fame and fame upgrades, best floors, milestones and perks, trophies and town helpers
   startRunGear();

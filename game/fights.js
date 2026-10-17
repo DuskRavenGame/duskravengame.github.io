@@ -14,6 +14,12 @@ function pickMonsterType(isBoss) {
   for (let type of towers[tower].monsters) {
     if (type.minFloor <= floor) {
       choices.push(type);
+      // (the kind a tamer is hunting turns up more often: petTrackWeight in data.js)
+      if (type.name === trackedPet && fightsWithPets()) {
+        for (let i = 1; i < petTrackWeight; i++) {
+          choices.push(type);
+        }
+      }
     }
   }
   return choices[Math.floor(Math.random() * choices.length)];
@@ -156,6 +162,8 @@ function spawnMonster(isBoss) {
   dotStacks = 0;
   fightTurns = 0;
 
+  bondTrial = false;
+
   // (a week's modifier can make rare monsters more common: "rareMore")
   monsterIsRare = !isBoss && Math.random() < rareChance + totalBonus("rareMore");
 
@@ -163,6 +171,13 @@ function spawnMonster(isBoss) {
     monsterMaxHp = Math.round(monsterMaxHp * bossHealth);
     monsterAttack = Math.round(monsterAttack * bossAttack);
     say("BOSS: " + monsterName + " blocks the way!");
+    // (a boss a tamer is hunting fights its Bond Trial: stronger, and it joins if beaten)
+    bondTrial = bondTrialReady(type.name);
+    if (bondTrial) {
+      monsterMaxHp = Math.round(monsterMaxHp * petTrialPower);
+      monsterAttack = Math.round(monsterAttack * petTrialPower);
+      say("BOND TRIAL: beat the " + monsterName + " and it joins you!");
+    }
   } else if (monsterIsRare) {
     monsterName = "Rare " + monsterName;
     monsterMaxHp = monsterMaxHp * 2;
@@ -294,6 +309,17 @@ function nextRoom() {
 }
 
 // ----- What happens in a room -----
+// The longest fight that still counts as one won without slowing down (see "Sweeping
+// through the easy floors" in data.js). A class whose damage comes in a burst every few
+// turns can say it needs longer: "quickFight" in its file. A slow spell must not make the
+// sweep stop early.
+function quickFightTurns() {
+  if (currentClass().quickFight !== undefined) {
+    return currentClass().quickFight();
+  }
+  return cruiseTurns;
+}
+
 function die() {
   let payout = deathPayout();
   say("You fell on floor " + floor + ", earned " + big(payout) + " experience and banked " + big(gold) + " gold.");
@@ -413,15 +439,21 @@ function victory() {
   if (monsterIsRare) {
     reward = reward * rareGold;
   }
-  // (a kind of monster the account knows well pays more: see "The bestiary" in data.js)
-  reward = Math.round(reward * monsterGold * (1 + totalBonus("gold")) * multiplier("gold") * (1 + bestiaryGold * bestiaryRank(monsterKind)));
+  // (a kind of monster the account knows well pays more: see "The bestiary" in data.js.
+  // Not for a class on its own path: what the account knows, the other classes learned)
+  let known = onOwnPath() ? 0 : bestiaryGold * bestiaryRank(monsterKind);
+  reward = Math.round(reward * monsterGold * (1 + totalBonus("gold")) * multiplier("gold") * (1 + known));
   gold = gold + reward;
+  if (fightsWithPets()) {
+    rewardPets(reward);
+    tryCatch();
+  }
   countKill(monsterKind);
 
   // (some keystones give this up: "noKillHeal")
   if (totalBonus("noKillHeal") === 0) {
     healSource = "After a kill";
-    healPlayer(playerMaxHp * (healOnKill + fameAdd("healOnKill")));
+    healPlayer(playerMaxHp * (healOnKill + fameAdd("healOnKill") + totalBonus("healOnKill")));
     healSource = "";
   }
 
@@ -432,7 +464,7 @@ function victory() {
 
   say("You defeat the " + monsterName + " and earn " + big(reward) + " gold.");
 
-  if (fightTurns > cruiseTurns) {
+  if (fightTurns > quickFightTurns()) {
     cruising = false;
   }
   // Every boss leaves a boon that suits the weapon being used. Relics are rarer: the boss
@@ -453,7 +485,12 @@ function victory() {
     let earned = bossFameAt(floor);
     if (earned > 0) {
       gainFame(earned);
-      say("Word of the boss's fall spreads: +" + big(earned) + " fame.");
+      say("Word of the boss's fall spreads: +" + big(earned) + (onOwnPath() ? " totems." : " fame."));
+    }
+    let wild = wildBossTotemsAt(floor);
+    if (wild > 0) {
+      totems = totems + wild;
+      say("The beasts of the Wild Reaches honour you: +" + big(wild) + " totems.");
     }
   }
 

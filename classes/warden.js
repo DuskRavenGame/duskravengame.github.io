@@ -164,8 +164,8 @@ classes.warden = {
   breakthroughs: [
     { id: "sharperSpikes", name: "Sharper Spikes", text: "Spiked Shield: reflected damage x1.2", multiply: { reflect: 1.2 } },
     { id: "longerSpear", name: "Longer Spear", text: "Tower Shield: spear damage x1.4", multiply: { spear: 1.4 } },
-    { id: "heavierDisc", name: "Heavier Disc", text: "Bladed Shield: thrown shield damage x1.5", multiply: { throw: 1.5 } },
-    { id: "oldGrudges", name: "Old Grudges", text: "Vengeance x1.5", multiply: { vengeance: 1.5 } }
+    { id: "heavierDisc", name: "Heavier Disc", text: "Bladed Shield: thrown shield damage x1.6", multiply: { throw: 1.6 } },
+    { id: "oldGrudges", name: "Old Grudges", text: "Vengeance x2", multiply: { vengeance: 2 } }
   ],
 
   // Special moves on a cooldown, put in the slots that open on floors 10, 35 and 75

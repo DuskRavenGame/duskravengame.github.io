@@ -46,6 +46,25 @@ let nextWeapon = "";
 // for example { weapon: 12, armor: 4 }. Step 12 is the second tier at +2.
 let forgeLevels = { weapon: 0, armor: 0 };
 
+// A class that fights with pets (the Beast Tamer) has no blacksmith. Each of its pets
+// grows by itself instead, for example { wolf: { step: 12, xp: 340 } }: "step" counts
+// like the blacksmith's (12 is the second tier at +2), and "xp" is the experience
+// toward the next step. Essence trains any pet. (See "Pets" in game/equipment.js.)
+let pets = {};
+let essence = 0;
+
+// The pet the tamer is bonded with (an id in petKits, classes/pets.js), and the one
+// picked to bond with after the next fall. "weapon" is then its path's starter: bear,
+// wolf or hawk, so that the path's perks, boons and relics work for it.
+let pet = "";
+let nextPet = "";
+
+// The kind of monster a tamer is hunting (a monster's name), or "" for none
+let trackedPet = "";
+
+// Is the boss being fought a Bond Trial? (see petTrialKnown in data.js)
+let bondTrial = false;
+
 // What the equipment gives right now. Worked out from forgeLevels (see recalcStats).
 let weaponPower = 0;
 let armorPower = 0;

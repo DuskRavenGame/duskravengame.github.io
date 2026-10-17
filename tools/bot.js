@@ -12,6 +12,13 @@
 //  w=name      with "every": only this weapon (not for a class with stances)
 //  ascend      ascend when allowed and no new floor for "stall" seconds
 //  stall=N     seconds without a new floor before ascending (default 600)
+//  bond=name   the Beast Tamer bonds with this pet (an id in classes/pets.js) from the start
+//  allpets     with c=beasttamer: one climb for every pet in classes/pets.js
+//  pets=a+b    with c=beasttamer: one climb for each of these pets (to split allpets
+//              between the Edge windows run.sh allows)
+//  lives       also say, for the last hours, each death (time into the ascension, floor,
+//              level after it) and every two minutes where the class is and how its fight
+//              goes. To see what a run does between deaths (the hawk's slow sweep was found so)
 //  noup        no boons (to measure what boons are worth)
 //  noforge     never use the blacksmith
 //  noabilities never put anything in an ability slot
@@ -63,6 +70,12 @@
 //  tomeburn    for the Zealot's Holy Tome: how many times the hero's attack the healing
 //              that burns the enemy was at most, by ten floors, before its ceiling
 //              (tomeBurnMost in classes/zealot.js). To set that ceiling by measurement.
+//  btcheck     for every build (each weapon, as with "every"): climb for h= hours, keep
+//              the class as it was on its deepest floor of the last third, and fight
+//              ordinary monsters of that floor for 3000 turns with each breakthrough it
+//              could pick added once more. Says how many times faster it kills with each,
+//              beside Conqueror (attack x1.5). A build's own breakthrough that is slower
+//              than Conqueror is a choice nobody should make. (c=, w= work as usual)
 //  duo         a Barbarian for 6 hours, then a new Ranger and Warden on the same account
 // =====================================================================
 
@@ -80,6 +93,10 @@ const HOURS = Number((location.hash.match(/h=([\d.]+)/) || [0, 10])[1]);
 const ONLY_CLASS = (location.hash.match(/c=(\w+)/) || [0, ""])[1];
 const EVERY = location.hash.includes("every");
 const ONLY_WEAPON = (location.hash.match(/w=(\w+)/) || [0, ""])[1];
+const ALL_PETS = location.hash.includes("allpets");
+const SOME_PETS = ((location.hash.match(/pets=([\w+]+)/) || [0, ""])[1]).split("+").filter(function (x) { return x !== ""; });
+// The pet the next climb bonds with ("" = the starter of its weapon)
+let botPet = (location.hash.match(/pet=(\w+)/) || [0, ""])[1];
 const NOUP = location.hash.includes("noup");
 const NOFORGE = location.hash.includes("noforge");
 const NOABILITIES = location.hash.includes("noabilities");
@@ -92,6 +109,7 @@ const HOME_HOURS = Number((location.hash.match(/home=([\d.]+)/) || [0, 0])[1]);
 const STALL = Number((location.hash.match(/stall=(\d+)/) || [0, 600])[1]);
 let ASCEND = location.hash.includes("ascend");
 const PROBE = location.hash.includes("probe");
+const LIVES = location.hash.includes("lives");
 
 // A perk the bot must take at its milestone (the perkcheck mode sets this)
 let forcedPerk = null;
@@ -155,12 +173,21 @@ function freshStart(className, weaponType, keepAccount) {
     classSaves = {};
     fame = 0;
     fameLevels = {};
+    totems = 0;
+    totemLevels = {};
     bestiary = {};
   }
   unpackClass(classSaves[className]);
   buildClassScreen();
   weapon = weaponType;
   nextWeapon = weaponType;
+  if (fightsWithPets()) {
+    pet = botPet !== "" ? botPet : weaponType;
+    nextPet = pet;
+    petOf(pet).rarity = 0;
+    weapon = petPaths[petKits[pet].path].build;
+    nextWeapon = weapon;
+  }
   if (TOWER !== "" && HOME_HOURS === 0) {
     tower = awayTowerFor(className);
     nextTower = tower;
@@ -260,7 +287,25 @@ function manage() {
     }
   }
 
-  if (!NOFORGE) {
+  // (a pet the bot was told to bond with stays Common, so that every pet is measured on
+  // its kit alone: catching it again would raise its rarity)
+  if (fightsWithPets() && botPet !== "" && pets[pet] !== undefined) {
+    pets[pet].rarity = 0;
+    pets[pet].copies = 0;
+    recalcStats();
+  }
+  if (!NOFORGE && fightsWithPets()) {
+    // (a class with pets has no blacksmith: its Essence trains the bonded pet)
+    let stepBefore = petOf(pet).step;
+    while (essence >= petTrainCost(pet)) {
+      let cost = petTrainCost(pet);
+      essence = essence - cost;
+      feedPet(pet, cost);
+    }
+    if (petOf(pet).step !== stepBefore) {
+      recalcStats();
+    }
+  } else if (!NOFORGE) {
     while (canAffordForge()) {
       let slot = forgeCostOf("armor") < forgeCostOf("weapon") ? "armor" : "weapon";
       bank = bank - forgeCostOf(slot);
@@ -297,6 +342,29 @@ function manage() {
         break;
       }
     }
+
+    // Totems, for a class on its own path (the Beast Tamer): the same way, with its own upgrades
+    let totemOrder = ["wildMight", "wildHide", "wildLore", "wildTraining"];
+    spending = onOwnPath();
+    while (spending) {
+      spending = false;
+      let low = Math.min(totemLevel("wildMight"), totemLevel("wildHide"));
+      for (let id of totemOrder) {
+        let item = totemUpgrades.find(function (x) { return x.id === id; });
+        if (item === undefined || totems < totemCost(item)) {
+          continue;
+        }
+        if ((id === "wildMight" || id === "wildHide") && totemLevel(id) > low) {
+          continue;
+        }
+        if (id !== "wildMight" && id !== "wildHide" && totemLevel(id) >= low) {
+          continue;
+        }
+        buyTotemUpgrade(item);
+        spending = true;
+        break;
+      }
+    }
   }
   recalcStats();
 }
@@ -322,11 +390,16 @@ function run(className, weaponType, stanceId, hours, ascending, keepAccount) {
 
   // What ended the runs of the last two hours, to see what a build is stuck on
   let killers = {};
+  let lives = [];
+  let firstCatchAt = null;
+  petsCaught = [];
   let probes = [];
   let deepestRun = null;
 
   edgeFights = { monster: [], boss: [], lostTurns: [], hitShare: [] };
   burnSeen = {};
+  snapFloor = 0;
+  snapClass = "";
   for (let i = 1; i <= hours * 3600; i++) {
     now = i;
     edgeOn = EDGE && i > hours * 3600 * 2 / 3;
@@ -334,6 +407,10 @@ function run(className, weaponType, stanceId, hours, ascending, keepAccount) {
       nextTower = awayTowerFor(className);
     }
     step();
+    if (BTCHECK && i > hours * 3600 * 2 / 3 && floor > snapFloor) {
+      snapFloor = floor;
+      snapClass = JSON.stringify(packClass());
+    }
     if (NOUP) {
       upgrades = {};
     }
@@ -367,6 +444,15 @@ function run(className, weaponType, stanceId, hours, ascending, keepAccount) {
       let killer = lastRun.killer + " F" + lastRun.floor + " (turn " + lastRun.fightTurns + ")";
       killers[killer] = (killers[killer] || 0) + 1;
     }
+    if (firstCatchAt === null && petsCaught.length > 0) {
+      firstCatchAt = i;
+    }
+    if (LIVES && deaths !== lastDeaths && lastRun !== null && i > (hours - 3) * 3600) {
+      lives.push(hoursText(ascensionSeconds) + ":F" + lastRun.floor + ":L" + level);
+    }
+    if (LIVES && i % 120 === 0 && i > (hours - 1.5) * 3600) {
+      lives.push("[" + hoursText(ascensionSeconds) + " F" + floor + " " + encounterType + " t" + fightTurns + " hp" + Math.round(playerHp / playerMaxHp * 100) + "% mon" + Math.round(monsterHp / monsterMaxHp * 100) + "% atk " + big(monsterAttack) + "/" + big(playerMaxHp) + "]");
+    }
     if (deaths !== lastDeaths && lastRun !== null && (deepestRun === null || lastRun.floor >= deepestRun.floor)) {
       deepestRun = lastRun;
     }
@@ -381,11 +467,20 @@ function run(className, weaponType, stanceId, hours, ascending, keepAccount) {
   }
 
   lastReached = reached;
-  let line = className + "/" + (stanceId || weaponType) + (TOWER !== "" ? " in " + towers[tower].name : "") + "  ";
+  let line = className + "/" + (stanceId || (fightsWithPets() ? pet : weaponType)) + (TOWER !== "" ? " in " + towers[tower].name : "") + "  ";
   line = line + marks.map(function (m) { return "F" + m + " " + (reached[m] === undefined ? "-" : hoursText(reached[m])); }).join("  ");
   line = line + "  | best " + bestFloor + ", deaths " + (deaths - deathsBefore) + ", level " + level + ", most boons " + mostBoons + ", attack " + big(playerAttack) + ", health " + big(playerMaxHp) + ", armor " + big(totalArmor());
   if (ascending) {
     line = line + ", ascensions " + ascensionsDone;
+  }
+  if (onOwnPath()) {
+    let spent = 0;
+    for (let item of totemUpgrades) {
+      for (let i = 0; i < totemLevel(item.id); i++) {
+        spent = spent + Math.ceil(item.cost * Math.pow(item.growth, i));
+      }
+    }
+    line = line + ", totems earned " + big(totems + spent);
   }
   if (TOWER !== "") {
     line = line + ", trophies " + trophies.length + ", deepest there " + (towerBest[awayTowerFor(className)] || 0);
@@ -393,6 +488,20 @@ function run(className, weaponType, stanceId, hours, ascending, keepAccount) {
   out.push(line);
   if (ascending) {
     out.push("    ascensions: " + ascensionTimes.slice(0, 14).join(" "));
+    // (and the last ones: a class whose late runs fall short of its best shows it here)
+    if (ascensionTimes.length > 14) {
+      out.push("    last ascensions: " + ascensionTimes.slice(-14).join(" "));
+    }
+  }
+  // (a tamer: what it caught, by rarity, and how soon the first catch came)
+  if (fightsWithPets()) {
+    let byRarity = petRarities.map(function (r, i) {
+      return r.name + " " + Object.keys(pets).filter(function (kind) { return petKits[kind].monster !== undefined && (pets[kind].rarity || 0) === i; }).length;
+    });
+    out.push("    caught: " + petsCaught.length + " catches, " + ownedPets().filter(function (kind) { return petKits[kind].monster !== undefined; }).length + " kinds (" + byRarity.join(", ") + "), first after " + (firstCatchAt === null ? "never" : hoursText(firstCatchAt)));
+  }
+  if (LIVES) {
+    out.push("    lives (time into the ascension:floor fallen on:level after): " + lives.join(" "));
   }
   if (PROBE && deepestRun !== null) {
     let parts = [];
@@ -634,8 +743,112 @@ function skillCheck() {
   }
 }
 
+// ----- "btcheck": what each breakthrough is worth to a build, against Conqueror -----
+// A breakthrough is picked again at every one, so each choice is measured as one more
+// of it on top of what the class already has. The fights are ordinary monsters of the
+// deepest floor, one after another; the class does not climb, buy or level meanwhile,
+// so the only difference between the figures is the breakthrough.
+const BTCHECK = location.hash.includes("btcheck");
+const BT_TURNS = 3000;
+let snapFloor = 0;      // the deepest floor of the last third of the climb...
+let snapClass = "";     // ...and the class as it was there (packClass, as text)
+
+// A random number that comes out the same for every breakthrough measured
+let seed = 1;
+function seededRandom() {
+  seed = (seed + 0x6D2B79F5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+// Turns a kill, and deaths, with these multipliers added
+function turnsAKill(extra) {
+  unpackClass(JSON.parse(snapClass));
+  whatIf = extra;
+  recalcStats();
+  playerHp = playerMaxHp;
+  let testFloor = floor;
+  let kills = 0;
+  let lost = 0;
+
+  let realRandom = Math.random;
+  let realVictory = victory;
+  let realDie = die;
+  let next = function () {
+    floor = testFloor;
+    room = 1;
+    encounterType = "monster";
+    spawnMonster(false);
+  };
+  victory = function () {
+    kills = kills + 1;
+    healPlayer(playerMaxHp * (healOnKill + fameAdd("healOnKill") + totalBonus("healOnKill")));
+    next();
+  };
+  die = function () {
+    lost = lost + 1;
+    playerHp = playerMaxHp;
+    next();
+  };
+
+  seed = 1;
+  Math.random = seededRandom;
+  next();
+  for (let turn = 0; turn < BT_TURNS; turn++) {
+    step();
+  }
+  Math.random = realRandom;
+  victory = realVictory;
+  die = realDie;
+  whatIf = {};
+  return { turns: BT_TURNS / Math.max(1, kills), lost: lost, floor: testFloor };
+}
+
+function breakthroughCheck() {
+  for (let className in classes) {
+    if (ONLY_CLASS !== "" && ONLY_CLASS !== className) {
+      continue;
+    }
+    let c = classes[className];
+    let builds = c.stances !== undefined ? Object.keys(c.stances) : Object.keys(c.gearTypes);
+
+    for (let build of builds) {
+      if (ONLY_WEAPON !== "" && ONLY_WEAPON !== build) {
+        continue;
+      }
+      let weaponType = c.stances !== undefined ? Object.keys(c.gearTypes)[0] : build;
+      let stanceId = c.stances !== undefined ? build : undefined;
+      // (the climb's own report is not wanted here)
+      let kept = out.length;
+      run(className, weaponType, stanceId, HOURS, true, false);
+      out.length = kept;
+      if (snapClass === "") {
+        out.push(className + "/" + build + ": no climb to measure");
+        continue;
+      }
+
+      let choices = [{ name: "Conqueror", multiply: { attack: 1.5 } }];
+      for (let perk of c.breakthroughs || []) {
+        if (!forOtherKind(perk.text)) {
+          choices.push(perk);
+        }
+      }
+      let base = turnsAKill({});
+      let parts = [];
+      for (let choice of choices) {
+        let result = turnsAKill(Object.assign({}, choice.multiply));
+        parts.push(choice.name + " x" + (base.turns / result.turns).toFixed(2) + (result.lost > 0 ? " (" + result.lost + " deaths)" : ""));
+      }
+      out.push(className + "/" + build + " on floor " + base.floor + ": " + base.turns.toFixed(2) + " turns a kill" + (base.lost > 0 ? " (" + base.lost + " deaths)" : "") + "; kills faster with " + parts.join(", "));
+    }
+  }
+}
+
 try {
-  if (location.hash.includes("perkcheck")) {
+  if (BTCHECK) {
+    breakthroughCheck();
+  } else if (location.hash.includes("perkcheck")) {
     perkCheck();
   } else if (location.hash.includes("skillcheck")) {
     skillCheck();
@@ -650,7 +863,12 @@ try {
         continue;
       }
       let types = Object.keys(classes[className].gearTypes);
-      if (!EVERY) {
+      if ((ALL_PETS || SOME_PETS.length > 0) && classes[className].fightsWithPets === true) {
+        for (let kind of SOME_PETS.length > 0 ? SOME_PETS : Object.keys(petKits)) {
+          botPet = kind;
+          run(className, petPaths[petKits[kind].path].build, undefined, HOURS, ASCEND, false);
+        }
+      } else if (!EVERY) {
         run(className, types[0], undefined, HOURS, ASCEND, false);
       } else if (classes[className].stances !== undefined) {
         for (let id in classes[className].stances) {

@@ -1,4 +1,4 @@
-// =====================================================================
+ // =====================================================================
 //  The Elementalist - fire, ice, lightning and earth
 // =====================================================================
 // The Elementalist picks an ELEMENT (on the Skills tab) and can change it at any
@@ -162,10 +162,10 @@ classes.elementalist = {
   // Extra choices at every BREAKTHROUGH (floor 150 and beyond), beside the ones every
   // class has. One for each build: it multiplies that build's own damage again.
   breakthroughs: [
-    { id: "hotterFlame", name: "Hotter Flame", text: "Fire: burning damage x1.3", multiply: { burn: 1.3 } },
+    { id: "hotterFlame", name: "Hotter Flame", text: "Fire: burning damage x1.6", multiply: { burn: 1.6 } },
     { id: "colderIce", name: "Colder Ice", text: "Ice: critical hit damage x1.5", multiply: { iceCrit: 1.5 } },
-    { id: "wilderStorm", name: "Wilder Storm", text: "Lightning: bolt damage x1.4", multiply: { bolt: 1.4 } },
-    { id: "biggerBoulders", name: "Bigger Boulders", text: "Earth: boulder damage x1.4", multiply: { boulder: 1.4 } }
+    { id: "wilderStorm", name: "Wilder Storm", text: "Lightning: bolt damage x1.5", multiply: { bolt: 1.5 } },
+    { id: "biggerBoulders", name: "Bigger Boulders", text: "Earth: boulder damage x1.5", multiply: { boulder: 1.5 } }
   ],
 
   // Special moves on a cooldown, put in the slots that open on floors 10, 35 and 75

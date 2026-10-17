@@ -313,8 +313,9 @@ function recalcStats() {
   let health = totalBonus("maxHp") + levelsGained * currentClass().perLevel.maxHp;
   let attack = totalBonus("attack") + levelsGained * currentClass().perLevel.attack + weaponPower;
 
-  playerMaxHp = Math.round(health * (1 + totalBonus("healthPercent")) * multiplier("health") * upgradeBoost());
-  playerAttack = Math.round(attack * (1 + totalBonus("attackPercent")) * multiplier("attack") * upgradeBoost());
+  // (a tamer's pet: its rarity multiplies both, see petRarities in data.js)
+  playerMaxHp = Math.round(health * (1 + totalBonus("healthPercent")) * multiplier("health") * upgradeBoost() * petRarityPower());
+  playerAttack = Math.round(attack * (1 + totalBonus("attackPercent")) * multiplier("attack") * upgradeBoost() * petRarityPower());
 
   if (playerHp > playerMaxHp) {
     playerHp = playerMaxHp;

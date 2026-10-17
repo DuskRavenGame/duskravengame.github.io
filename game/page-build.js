@@ -196,6 +196,17 @@ function buildFameList() {
   }
 }
 
+// Runs once, when the game starts: the totem upgrades (the Beast Tamer's own path)
+function buildTotemList() {
+  let box = document.getElementById("totem-upgrades");
+
+  for (let item of totemUpgrades) {
+    addRow(box, "totem-" + item.id, function () {
+      buyTotemUpgrade(item);
+    });
+  }
+}
+
 // Runs once, when the game starts: the table of what each way of starting over costs
 function buildResetTable() {
   let table = document.getElementById("reset-table");
@@ -242,6 +253,9 @@ function buildClassScreen() {
   // The blacksmith's weapon picker lists this class's own kinds of weapon
   let gearBox = document.getElementById("weapon-buttons");
   gearBox.innerHTML = "";
+  // (a tamer's buttons are its pets, made by showPetButtons in game/page-show.js)
+  gearBox.dataset.shown = "";
+  gearBox.classList.remove("pet-grid");
   if (currentClass().stances !== undefined) {
     // A class that fights with stances (the Elementalist's elements) picks one of those
     // here. It is the same choice as on the Skills tab: players looked for it here, where

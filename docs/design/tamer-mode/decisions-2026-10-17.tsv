@@ -1,0 +1,31 @@
+id	what	why	evidence	result
+1	sweep counts a magic pet's fight won by its first spell as quick (quickFight)	hawk restarted ~200 floors low after deaths; bot ascended it mid-sweep	stall=600 414 vs stall=1800 700; lives log showed F134-167 restarts	hawk 710 at both stalls: kept
+2	Arcana haste capped at +50%, overflow to spell damage	deep hawk cast every turn, Storm Eye blocked every attack	673 -> 626 after sweep fix	kept
+3	Arcana loses critPower	two own words multiplied (MAP watch list)	710 -> 673	kept
+4	harry removed	leftover of old hawk, kit has one passive	626 -> 628 (noise)	kept as simplification
+5	Storm Dive 3 -> 2 dives, Arcana spellPower 0.08 -> 0.045, hawkCrit 2.5 -> 2.0	hawk damage-bound (damageTaken x2 no change, crit x0.33 -80)	-> 571	kept
+6	wolfBite 0.25 -> 0.32	lift the weak build	502 -> 524	kept
+7	pets as data (classes/pets.js), pet vs weapon(path)	72 kits need one shape; path keeps perks/boons/relics working	starters unchanged: 520/534/579 vs 519/526/572	kept
+8	catching (1%, rare x10, rarity roll, dupes -> better rarity or Essence)	roadmap phase 2	check 3h0c	kept
+9	first batch petcheck	3 runs x 100h each	523..620, spread 97	retune 4
+10	goblin gold .5->.2, crossbowman no double & half armor, ape ramp .1->.05, grunt +bossSlayer .25	outliers	pending
+10b	retune result	goblin 515 crossbowman 509 ape 532 grunt 522 (3 runs each)	overshot goblin/crossbowman	goblin gold .35, rune bolt ignores armor
+11	39 more ordinary kits + new pieces (guard, heal, drain, killHeal, sacrifice) and words	phase 2 rest; owner "continue"	check 3h0c every kit hits	kept, petcheck pending
+12	Blood Price check: float === 1 -> tolerance	random fervour made 0.9999999999999999	failure text showed it	fixed root cause of old flake
+13	ascension kept rarity	petsStartOver rebuilt records without rarity	code review	fixed + check
+14	phase 4 hunt (track x3, bestiary +50%/rank)	roadmap S, no balance risk	check: 6000 picks, ratio	kept
+15	24 boss kits, tamed at 3% once bestiary rank 1	all 72 pets in game	check	kept (Bond Trial fight not built)
+16	merging: copies, 3 -> next rarity, Mythic only by merge	roadmap phase 6	check	kept
+17	pet stands beside tamer in fight	feel: caught pet visible	screenshot pending	
+18	phase 3 tiers/badges NOT built	x1.5/tier upends balance, gates home pets behind 7 badges	design	left to owner
+19	fair petcheck: bot keeps forced pet Common	catches raised the bonded pet to Legendary mid-run (WR pets inflated)	viper 595->495, hyena 630->515	kept
+20	catch economy: owned kinds 0.1%, merge 3x(rarity+1) copies	100h runs had all 9 home kinds Legendary	bot caught: line	kept
+21	spellTurn .613->.5, wolfBite .32->.35, hawkPlain .4->.55	Magic path +40, Primal -10; magic F50 3h vs physical 1.3h	path medians 546/533/529	kept, final pass pending
+22	16 outlier kits nudged (single runs)	top >585, bottom <500	bottom +20-40	final pass pending
+23	perk prefixes Bear:/Wolf Pack:/Hawk: -> Physical:/Primal:/Magic:	caught pets use path perks	33 texts	kept
+24	Bond Trial for bosses (rank 2, x1.5, certain tame)	roadmap phase 5	check	kept
+25	Shadow Blade: counter reset each fight + 2-turn sweep	same shape as hawk	to test	
+26	final petcheck 75 pets x2	after fixes	median 535, p10 512 p90 566, range 496-606	spread is mostly Wild Reaches type matchups (weak fire/nature/crushing, resist arcane/piercing/slashing): by design, stop tuning
+27	Shadow Blade counter carries to next fight	assassinStartFight cleared it	298 -> 314 (3 runs each)	kept + check proven
+28	Shadow Blade quickFight 3	sweep test +24 at stall 1800	314 -> 318 noise	reverted
+29	whole field stall 600 vs 1800	find other sweep victims	running	

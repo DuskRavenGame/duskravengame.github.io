@@ -131,6 +131,25 @@ function upgradeSave(data) {
     data.fameLevels = {};
   }
 
+  // Totems, and the Beast Tamer starting again (17 October 2026). The Tamer became a
+  // game of its own: it fights with pets, has no blacksmith, and takes nothing from the
+  // other classes. Its old climb was made with all of those, so a Tamer already played
+  // starts again from nothing (the owner's call). What it keeps: the unlock (a legend
+  // unlock, which belongs to the account) and two totems for every floor of its old
+  // best, to start its own path with. This runs once: a save that already has totems
+  // has been through it. (The save as it was is kept beside it: see loadGame.)
+  if (data.totems === undefined) {
+    let tamer = data.classSaves === undefined ? undefined : data.classSaves.beasttamer;
+    data.totems = tamer !== undefined && typeof tamer.bestFloor === "number" ? tamer.bestFloor * 2 : 0;
+    if (tamer !== undefined) {
+      delete data.classSaves.beasttamer;
+      tamerWasRestarted = data.totems;
+    }
+  }
+  if (data.totemLevels === undefined) {
+    data.totemLevels = {};
+  }
+
   // An example of a step, for when another is needed:
   //
   // if (data.version === 3) {
@@ -164,6 +183,16 @@ let fameWasRefunded = false;
 
 // Set when a class's skill points had to be given back (see unpackClass)
 let skillsWereReset = false;
+
+// The totems a Beast Tamer that was started again was paid (0 when nothing happened)
+let tamerWasRestarted = 0;
+
+function tellAboutTamerRestart() {
+  if (tamerWasRestarted > 0) {
+    say("The Beast Tamer is now a game of its own, with pets in place of weapons, so your Tamer starts again from the first floor. You keep it unlocked, and its old climb has paid " + big(tamerWasRestarted) + " totems (Ascension tab).");
+    tamerWasRestarted = 0;
+  }
+}
 
 function tellAboutSkillReset() {
   if (skillsWereReset) {
@@ -210,6 +239,11 @@ function freshClass(className) {
     nextWeapon: "",
     stance: "",
     forgeLevels: { weapon: 0, armor: 0 },
+    pets: {},
+    essence: 0,
+    pet: "",
+    nextPet: "",
+    trackedPet: "",
     upgrades: {},
     skillLevels: {},
     chosenPerks: {},
@@ -265,6 +299,11 @@ function packClass() {
     nextWeapon: nextWeapon,
     stance: currentClass().stances !== undefined ? mainKind() : stance,
     forgeLevels: forgeLevels,
+    pets: pets,
+    essence: essence,
+    pet: pet,
+    nextPet: nextPet,
+    trackedPet: trackedPet,
     upgrades: upgrades,
     skillLevels: skillLevels,
     chosenPerks: chosenPerks,
@@ -323,6 +362,12 @@ function unpackClass(saved) {
   nextWeapon = data.nextWeapon;
   stance = data.stance;
   forgeLevels = data.forgeLevels;
+  // (a save from before pets has none: the Beast Tamer's are made by upgradeSave)
+  pets = typeof data.pets === "object" && data.pets !== null ? data.pets : {};
+  essence = typeof data.essence === "number" ? data.essence : 0;
+  pet = typeof data.pet === "string" ? data.pet : "";
+  nextPet = typeof data.nextPet === "string" ? data.nextPet : "";
+  trackedPet = typeof data.trackedPet === "string" ? data.trackedPet : "";
   upgrades = data.upgrades;
   skillLevels = data.skillLevels;
   chosenPerks = data.chosenPerks;
@@ -416,6 +461,19 @@ function unpackClass(saved) {
   // With nothing else picked at the blacksmith, the next run uses the same weapon
   if (currentClass().gearTypes[nextWeapon] === undefined) {
     nextWeapon = weapon;
+  }
+
+  // A tamer is always bonded with a pet: the starter of its weapon's path to begin with
+  // (a save from before caught pets has none), and the weapon is that pet's path
+  if (fightsWithPets()) {
+    if (petKits[pet] === undefined) {
+      pet = weapon;
+    }
+    if (petKits[nextPet] === undefined) {
+      nextPet = pet;
+    }
+    weapon = petPaths[petKits[pet].path].build;
+    nextWeapon = petPaths[petKits[nextPet].path].build;
   }
 
   // A class with stances always has one picked: the first on its list to begin with
@@ -542,6 +600,11 @@ const fightParts = [
   // The fight's clock, the stacks on the monster, and the last hit the hero took
   { name: "fightTurns", get: function () { return fightTurns; }, set: function (value) { fightTurns = value; } },
   { name: "dotStacks", get: function () { return dotStacks; }, set: function (value) { dotStacks = value; } },
+  // (the Beast Tamer's pet: turns toward its skill, and a skill's damage past the kill)
+  { name: "petCharge", get: function () { return petCharge; }, set: function (value) { petCharge = value; } },
+  { name: "petOverflow", get: function () { return petOverflow; }, set: function (value) { petOverflow = value; } },
+  { name: "enemyDazzled", get: function () { return enemyDazzled; }, set: function (value) { enemyDazzled = value; } },
+  { name: "bondTrial", get: function () { return bondTrial; }, set: function (value) { bondTrial = value === true; } },
   { name: "lastHitTaken", get: function () { return lastHitTaken; }, set: function (value) { lastHitTaken = value; } },
 
   // A boss's mechanics (game/bosses.js)
@@ -655,6 +718,8 @@ function saveGame() {
     classSaves: classSaves,
     fame: fame,
     fameLevels: fameLevels,
+    totems: totems,
+    totemLevels: totemLevels,
     legendMarks: legendMarks,
     legendLevels: legendLevels,
     bestiary: bestiary,
@@ -685,6 +750,8 @@ function loadGame() {
       classSaves = data.classSaves;
       fame = data.fame;
       fameLevels = keepKnownIds(data.fameLevels, fameUpgrades);
+      totems = data.totems;
+      totemLevels = keepKnownIds(data.totemLevels, totemUpgrades);
 
       // The bestiary: saves from before it existed start it empty
       bestiary = (typeof data.bestiary === "object" && data.bestiary !== null) ? data.bestiary : {};
@@ -721,6 +788,8 @@ function loadGame() {
       classSaves = {};
       fame = 0;
       fameLevels = {};
+      totems = 0;
+      totemLevels = {};
       legendMarks = 0;
       legendLevels = {};
       bestiary = {};
@@ -777,6 +846,7 @@ function switchClass(className) {
   logLines = [];
   say("You are now playing the " + currentClass().name + ".");
   tellAboutSkillReset();
+  tellAboutTamerRestart();
   resumeOrStartEncounter();
   updateScreen();
   saveGame();

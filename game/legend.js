@@ -26,9 +26,13 @@ function legendLevel(id) {
   return legendLevels[id];
 }
 
-// What the legend unlocks add to a number. They work for every class, in full.
+// What the legend unlocks add to a number. They work for every class, in full, but a
+// class on its own path (the Beast Tamer) has none of them.
 function legendBonus(stat) {
   let total = 0;
+  if (onOwnPath()) {
+    return total;
+  }
 
   for (let item of legendUnlocks) {
     if (item.bonus[stat] !== undefined) {
@@ -85,16 +89,28 @@ function legendMarksNow() {
   return Math.floor(Math.sqrt(bestFloor) * legendMarkRate);
 }
 
+// What becoming a legend pays, in words: marks, or totems for a class on its own path
+function legendPayText() {
+  if (onOwnPath()) {
+    return big(legendMarksNow() * totemsPerLegendMark) + " totems";
+  }
+  return legendMarksNow() + " legend marks";
+}
+
 function becomeLegend() {
   if (!canBecomeLegend()) {
     return;
   }
-  if (!confirm("Become a legend? This class starts again from floor 1 and level 1, with every milestone to earn again, for " + legendMarksNow() + " legend marks.")) {
+  if (!confirm("Become a legend? This class starts again from floor 1 and level 1, with every milestone to earn again, for " + legendPayText() + ".")) {
     return;
   }
 
-  let paid = legendMarksNow();
-  legendMarks = legendMarks + paid;
+  let paid = legendPayText();
+  if (onOwnPath()) {
+    totems = totems + legendMarksNow() * totemsPerLegendMark;
+  } else {
+    legendMarks = legendMarks + legendMarksNow();
+  }
   legends = legends + 1;
 
   // What an ascension does not touch
@@ -113,7 +129,7 @@ function becomeLegend() {
   ascensionBest = 1;
   startClassOver();
 
-  say("You are a legend. " + paid + " legend marks, and the whole tower to climb again.");
+  say("You are a legend. " + paid + ", and the whole tower to climb again.");
   buildClassScreen();
   startEncounter();
   updateScreen();
@@ -129,7 +145,7 @@ function showLegend() {
 
   let button = document.getElementById("legend-btn");
   if (canBecomeLegend()) {
-    button.textContent = "Become a legend (+" + legendMarksNow() + " marks)";
+    button.textContent = "Become a legend (+" + legendPayText() + ")";
     button.disabled = false;
   } else {
     button.textContent = "Become a legend (reach floor " + legendFloor + " first)";

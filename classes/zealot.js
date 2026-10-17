@@ -145,10 +145,10 @@ classes.zealot = {
   // Extra choices at every BREAKTHROUGH (floor 150 and beyond), beside the ones every
   // class has. One for each build: it multiplies that build's own damage again.
   breakthroughs: [
-    { id: "brighterLight", name: "Brighter Light", text: "Holy Mace: holy damage and Judgement damage x1.2", multiply: { mace: 1.2 } },
+    { id: "brighterLight", name: "Brighter Light", text: "Holy Mace: holy damage and Judgement damage x1.4", multiply: { mace: 1.4 } },
     { id: "swifterAnswer", name: "Swifter Answer", text: "Mace and Shield: strike back damage x1.5", multiply: { shieldCounter: 1.5 } },
     { id: "hotterFaith", name: "Hotter Faith", text: "Holy Tome: the burn from healing you do not need x1.5", multiply: { sacred: 1.5 } },
-    { id: "longerCrusade", name: "Longer Crusade", text: "Crusade x1.5", multiply: { crusade: 1.5 } }
+    { id: "longerCrusade", name: "Longer Crusade", text: "Crusade x2", multiply: { crusade: 2 } }
   ],
 
   // Special moves on a cooldown, put in the slots that open on floors 10, 35 and 75

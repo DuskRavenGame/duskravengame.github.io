@@ -1,0 +1,565 @@
+<title>Tamer Mode Roadmap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column like the game's own cards, dark gold on near-black, the
+   game's Cinzel and EB Garamond; a rarity ladder and a phase track carry the page. */
+:root {
+  --bg: #0b0a08;
+  --card: #15110d;
+  --edge: #3a2e20;
+  --text: #d8cfbd;
+  --faded: #8a806f;
+  --gold: #d8b45e;
+  --gold-dim: #6b5426;
+  --common: #9a9488;
+  --uncommon: #6fae5a;
+  --rare: #4f8fd6;
+  --epic: #a46ad8;
+  --legendary: #e08a35;
+  --mythic: #e04a52;
+  --display: "Cinzel", Georgia, "Times New Roman", serif;
+  --body: "EB Garamond", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+body {
+  background: radial-gradient(ellipse 120% 60% at 50% -10%, #2a1f12 0%, var(--bg) 60%) fixed, var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 1.55;
+}
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 6vw, 46px); letter-spacing: 3px; color: var(--gold); line-height: 1.1; }
+h2 { font-size: 15px; letter-spacing: 3.5px; text-transform: uppercase; color: var(--gold); }
+h3 { font-size: 15px; letter-spacing: 1.5px; color: #efe4cc; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--faded); }
+.lede { font-size: 21px; max-width: 64ch; }
+.muted { color: var(--faded); }
+section { display: flex; flex-direction: column; gap: 16px; }
+.head { display: flex; flex-direction: column; gap: 14px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.fact {
+  font-size: 15px; padding: 4px 10px; border: 1px solid var(--edge); border-radius: 8px; background: var(--card);
+}
+.fact b { color: var(--gold); font-weight: 500; font-family: var(--mono); font-size: 14px; }
+
+/* The loop */
+.loop { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.step {
+  font-family: var(--display); font-size: 14px; letter-spacing: 1.5px; padding: 8px 14px;
+  border: 1px solid var(--gold-dim); border-radius: 999px; background: linear-gradient(180deg, #2a2016, #17110c); color: #f0e2bf;
+}
+.arrow { color: var(--gold-dim); font-size: 18px; }
+
+/* Rarity ladder */
+.ladder { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.tier { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; min-width: 0; }
+.frame {
+  width: 100%; max-width: 120px; aspect-ratio: 1; border-radius: 12px; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 40%, #2b2219, #0d0b09);
+  border: 2px solid var(--c); box-shadow: 0 0 calc(var(--g) * 1px) var(--c), inset 0 0 18px rgba(0,0,0,.7);
+}
+.frame img { width: 82%; height: 82%; object-fit: contain; filter: var(--f); }
+.tier b { font-family: var(--display); font-size: 12px; letter-spacing: 1.5px; color: var(--c); }
+.tier span { font-family: var(--mono); font-size: 12px; color: var(--faded); }
+.t1 { --c: var(--common); --g: 0; --f: grayscale(.5) brightness(.85); }
+.t2 { --c: var(--uncommon); --g: 4; --f: none; }
+.t3 { --c: var(--rare); --g: 8; --f: saturate(1.2); }
+.t4 { --c: var(--epic); --g: 12; --f: hue-rotate(200deg) saturate(1.3); }
+.t5 { --c: var(--legendary); --g: 16; --f: hue-rotate(-40deg) saturate(1.6) brightness(1.1) drop-shadow(0 0 6px #e08a35); }
+.t6 { --c: var(--mythic); --g: 22; --f: hue-rotate(120deg) saturate(1.8) brightness(1.15) drop-shadow(0 0 8px #e04a52); }
+@media (max-width: 620px) { .ladder { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Idea cards */
+.ideas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .ideas { grid-template-columns: minmax(0, 1fr); } }
+.idea {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 16px 18px;
+  background: var(--card); border: 1px solid var(--edge); border-radius: 12px;
+}
+.idea p { font-size: 16.5px; }
+.idea ul { margin: 0; padding-left: 18px; font-size: 16.5px; display: flex; flex-direction: column; gap: 3px; }
+.take { font-size: 15.5px; color: #e9dcbc; border-top: 1px solid var(--edge); padding-top: 8px; margin-top: auto; }
+.take::before { content: "My take · "; font-family: var(--mono); font-size: 12px; letter-spacing: 1px; color: var(--gold); text-transform: uppercase; }
+.pill { align-self: flex-start; font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; border: 1px solid; }
+.pill.core { color: var(--gold); border-color: var(--gold-dim); }
+.pill.later { color: var(--epic); border-color: #4b3466; }
+.pill.ask { color: var(--legendary); border-color: #6a4220; }
+
+/* Team mock */
+.team { display: flex; flex-wrap: wrap; gap: 10px; }
+.slot { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 12px; background: #110e0b; border: 1px solid var(--edge); min-width: 0; }
+.slot img { width: 54px; height: 54px; object-fit: contain; border-radius: 10px; border: 2px solid var(--c); background: #0b0908; }
+.slot div { display: flex; flex-direction: column; line-height: 1.25; }
+.slot b { font-family: var(--display); font-size: 13px; letter-spacing: 1px; color: #efe4cc; }
+.slot span { font-family: var(--mono); font-size: 12px; color: var(--faded); }
+.slot.lead { border-color: var(--gold-dim); box-shadow: 0 0 10px rgba(216,180,94,.25); }
+
+/* Badges */
+.badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 92px; padding: 8px 4px; border-radius: 10px; border: 1px solid var(--edge); background: var(--card); text-align: center; }
+.badge i { font-style: normal; font-family: var(--display); font-size: 18px; color: var(--gold); }
+.badge span { font-size: 13px; line-height: 1.2; }
+.badge em { font-family: var(--mono); font-style: normal; font-size: 11px; color: var(--faded); }
+.badge.got { border-color: var(--gold-dim); }
+
+/* Roadmap */
+.track { display: flex; flex-direction: column; gap: 0; position: relative; }
+.phase { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 14px; padding-bottom: 18px; position: relative; }
+.phase::before { content: ""; position: absolute; left: 26px; top: 46px; bottom: 0; width: 2px; background: var(--edge); }
+.phase:last-child::before { display: none; }
+.num {
+  width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
+  font-family: var(--display); font-size: 20px; color: var(--gold); background: #1b150f; border: 2px solid var(--gold-dim);
+}
+.phase.done .num { background: var(--gold-dim); color: #1a130b; border-color: var(--gold); }
+.body { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-top: 6px; }
+.body .row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.size { font-family: var(--mono); font-size: 12px; padding: 1px 8px; border-radius: 6px; border: 1px solid var(--edge); color: var(--faded); }
+.body p { font-size: 16.5px; }
+.ships { font-size: 15.5px; color: var(--faded); }
+.ships b { color: var(--text); font-weight: 500; }
+
+/* Questions */
+.qs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 720px) { .qs { grid-template-columns: minmax(0, 1fr); } }
+.q { padding: 12px 14px; border-radius: 10px; border: 1px dashed #6a4220; background: #17100a; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.q b { font-family: var(--display); font-size: 14px; letter-spacing: .5px; color: #f2d7a8; }
+.q p { font-size: 15.5px; color: var(--faded); }
+.q p strong { color: var(--text); font-weight: 500; }
+
+/* Paths and kits */
+.paths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 720px) { .paths { grid-template-columns: minmax(0, 1fr); } }
+.path { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 12px; background: var(--card); border: 1px solid var(--edge); border-top: 3px solid var(--p); min-width: 0; }
+.path h3 { color: var(--p); }
+.path .stat { font-family: var(--mono); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--faded); }
+.path p { font-size: 16px; }
+.phys { --p: #d17a3c; }
+.mag { --p: #7c9ce8; }
+.prim { --p: #8fbf55; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--edge); border-radius: 12px; background: var(--card); }
+table.kits { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 15.5px; }
+.kits th { text-align: left; font-family: var(--mono); font-weight: 500; font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--faded); padding: 10px 12px; border-bottom: 1px solid var(--edge); }
+.kits td { padding: 10px 12px; border-bottom: 1px solid #241c14; vertical-align: top; line-height: 1.4; }
+.kits tr:last-child td { border-bottom: 0; }
+.kits .pet { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+.kits .pet img { width: 46px; height: 46px; object-fit: contain; border-radius: 8px; background: #0b0908; border: 1px solid var(--edge); flex: none; }
+.kits .pet b { font-family: var(--display); font-size: 13.5px; letter-spacing: .5px; color: #efe4cc; display: block; }
+.kits .pet i { font-size: 13px; color: var(--faded); }
+.kits .tag { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 5px; border: 1px solid var(--p); color: var(--p); white-space: nowrap; }
+.kits td em { font-style: normal; color: #e9d7a8; font-family: var(--display); font-size: 13px; letter-spacing: .5px; }
+.kits .niche { color: var(--faded); font-size: 14.5px; }
+.summary { font-family: var(--mono); font-size: 13px; color: var(--faded); }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 13px/1 var(--mono); letter-spacing: .5px; padding: 7px 11px; border-radius: 999px; border: 1px solid var(--edge); background: var(--card); color: var(--text); cursor: pointer; }
+.chip.phys, .chip.mag, .chip.prim { color: var(--p); }
+.chip[aria-pressed="true"] { border-color: var(--gold); background: #2a2016; color: var(--gold); }
+.chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.kits .bossmark { display: inline-block; margin-top: 3px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--legendary); }
+.kits .power { display: block; margin-top: 2px; font-family: var(--mono); font-size: 11.5px; color: var(--gold); }
+.kits .worth { display: block; margin-top: 3px; font-family: var(--mono); font-size: 11.5px; color: var(--mag, #7c9ce8); }
+.kits .dtype { display: block; margin-top: 4px; font-size: 13.5px; color: var(--faded); }
+.kits .role { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--gold); margin-bottom: 2px; }
+.kits tr.sep td { font-family: var(--mono); font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--gold); background: #120e0a; padding: 6px 12px; }
+
+.risks { display: flex; flex-direction: column; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.risks li { font-size: 16.5px; padding-left: 16px; border-left: 2px solid var(--mythic); }
+footer { font-size: 14px; color: var(--faded); border-top: 1px solid var(--edge); padding-top: 14px; }
+code { font-family: var(--mono); font-size: .85em; color: #e9d7a8; }
+</style>
+
+<div class="wrap">
+
+  <header class="head">
+    <p class="eyebrow">Lloegrys Idle · brainstorm · 17 October 2026</p>
+    <h1>Tamer Mode</h1>
+    <p class="lede">The Beast Tamer stops being a class with a weapon and becomes a game of its own. You catch monsters in the towers and bond with one of them: in the tower it is you and your pet, and that pet is the character you raise. No blacksmith, no weapon: pets grow from experience and a currency of their own, and a permanent Taming Rank decides how strong a pet you can bond with. Teams come later, in a PvP mode of their own.</p>
+    <div class="facts">
+      <span class="fact"><b>72</b> monsters and bosses already have pictures</span>
+      <span class="fact"><b>8</b> towers to catch in</span>
+      <span class="fact"><b>1 in 10</b> monsters is rare today</span>
+      <span class="fact">The bestiary already counts kills per kind</span>
+      <span class="fact">20261017c (built, not live) already puts the Tamer on its own path with totems</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>The loop</h2>
+    <div class="loop">
+      <span class="step">Climb</span><span class="arrow">→</span>
+      <span class="step">Catch</span><span class="arrow">→</span>
+      <span class="step">Raise</span><span class="arrow">→</span>
+      <span class="step">Bond</span><span class="arrow">→</span>
+      <span class="step">Climb deeper</span><span class="arrow">↺</span>
+    </div>
+    <p class="muted" style="font-size:16.5px">Deeper floors hold rarer catches, and rarer pets need a higher Taming Rank, which comes from climbing. Each part pulls on the next.</p>
+  </section>
+
+  <section>
+    <h2>Rarity, from one picture</h2>
+    <p style="font-size:16.5px">Every catch rolls a rarity. A rare monster can never come out below Rare. The same Venom Drake below is the game's own picture with only a frame, a glow and a colour shift, so the whole ladder costs no new art.</p>
+    <div class="ladder">
+      <div class="tier t1"><div class="frame"><img src="{{drake}}" alt="Venom Drake, Common"></div><b>Common</b><span>x1.0 · 60%</span></div>
+      <div class="tier t2"><div class="frame"><img src="{{drake}}" alt="Venom Drake, Uncommon"></div><b>Uncommon</b><span>x1.15 · 25%</span></div>
+      <div class="tier t3"><div class="frame"><img src="{{drake}}" alt="Venom Drake, Rare"></div><b>Rare</b><span>x1.3 · 10%</span></div>
+      <div class="tier t4"><div class="frame"><img src="{{drake}}" alt="Venom Drake, Epic"></div><b>Epic</b><span>x1.5 · 4%</span></div>
+      <div class="tier t5"><div class="frame"><img src="{{drake}}" alt="Venom Drake, Legendary"></div><b>Legendary</b><span>x1.75 · 1%</span></div>
+      <div class="tier t6"><div class="frame"><img src="{{drake}}" alt="Venom Drake, Mythic"></div><b>Mythic</b><span>x2 · merge only</span></div>
+    </div>
+    <p class="muted" style="font-size:15px">Rarity is the chase inside a tier, so its steps are gentle: a Mythic is twice a Common of the same kind. What tower a pet comes from matters more (see "Later pets are stronger"). Numbers and odds are first guesses.</p>
+  </section>
+
+  <section>
+    <h2>One bonded pet</h2>
+    <p style="font-size:16.5px">In the tower it is the tamer and one pet, as the fight already shows two fighters facing each other. The rest of what you catch waits in the den. The bonded pet is the character: its level, its skills, its rarity are what you raise over weeks.</p>
+    <div class="team">
+      <div class="slot lead" style="--c: var(--epic)"><img src="{{warg}}" alt="Warg"><div><b>Warg · bonded</b><span>Epic · lv 34 · bites x3</span></div></div>
+    </div>
+    <p style="font-size:16.5px">The den still matters:</p>
+    <div class="team">
+      <div class="slot" style="--c: var(--rare)"><img src="{{bear}}" alt="Dire Bear"><div><b>Dire Bear</b><span>Rare · for towers that resist bites</span></div></div>
+      <div class="slot" style="--c: var(--uncommon)"><img src="{{drake}}" alt="Venom Drake"><div><b>Venom Drake</b><span>Uncommon · to feed to the Warg, or poison</span></div></div>
+    </div>
+    <p class="muted" style="font-size:15px">A pet's kind comes from the monster's own numbers in <code>towers.js</code>: high health makes a guard, high attack a striker, its weaknesses and resistances its element. That makes swapping your bond per tower a real choice.</p>
+  </section>
+
+  <section>
+    <h2>The tamer commands, the pet fights</h2>
+    <p style="font-size:16.5px">The tamer never attacks. Everything you level and buy on the tamer feeds the pet: the tamer has three path stats, and each pet grows from one of them. (Today's staff blow does 0 to 1% of the Tamer's damage in the bot's probe, so nothing is lost.)</p>
+    <div class="paths">
+      <div class="path phys"><span class="stat">Tamer stat · Might</span><h3>Physical</h3><p>Hits and bites: crushing, slashing, piercing. Big single blows, stuns, armor breaking.</p></div>
+      <div class="path mag"><span class="stat">Tamer stat · Arcana</span><h3>Magic</h3><p>Spells the pet casts: fire, ice, lightning, arcane, holy. Goes through armor, hits a monster's weakness.</p></div>
+      <div class="path prim"><span class="stat">Tamer stat · Instinct</span><h3>Primal</h3><p>Affliction, the game's damage over time: bleed and poison stacks, and critical strikes.</p></div>
+    </div>
+    <p style="font-size:16.5px">The third path deals damage on purpose. The map records that every choice which only kept the hero alive was a trap, 10 to 37 floors behind its neighbours, because a climb stops at the fight's clock and only damage beats the clock. So staying alive is a passive any pet can have, never a whole path.</p>
+    <p style="font-size:16.5px">The starters, one a path: the <b>Bear</b> (Physical), the <b>Wolf</b>, whose bites bleed (Primal), and the <b>Hawk</b> as a storm hawk diving with lightning (Magic; "Storm Hawk" is already one of its perks).</p>
+    <h3 style="margin-top:6px">How each path fights</h3>
+    <div class="paths">
+      <div class="path phys"><span class="stat">Physical</span><p><b>Full hits every turn.</b> Its skill comes back every 6 turns. Might raises every hit, so most of its damage is the plain attack.</p></div>
+      <div class="path mag"><span class="stat">Magic</span><p><b>Weak hits, 40% of a physical pet's.</b> Its spell comes back every 3 turns, and Arcana raises spell damage and makes spells come back faster. Every magic passive changes how its spells work, so a magic pet lives by its spells.</p></div>
+      <div class="path prim"><span class="stat">Primal</span><p><b>Lighter hits that stack bleed or poison, or land critical hits.</b> Its skill comes back every 5 turns. Instinct raises stacks and critical hits, so its damage grows over a fight.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Slow spells never punish</h2>
+    <p style="font-size:16.5px">An ordinary fight lasts two or three turns, so a pet that waits for its spell could lose it to bad timing. Four rules stop that.</p>
+    <div class="ideas">
+      <article class="idea"><span class="pill core">Rule</span><h3>The wait carries over</h3><p>A spell's cooldown runs across fights, as abilities already do today, and is cleared only when a new run starts. A fight that ends early never wastes the charge.</p></article>
+      <article class="idea"><span class="pill core">Rule</span><h3>Nothing is overkill</h3><p>Spell damage beyond what kills a monster lands on the next one. A big spell on a nearly dead monster is never wasted, and a spell landing over two turns finishes on whoever is there.</p></article>
+      <article class="idea"><span class="pill core">Rule</span><h3>A longer wait pays more</h3><p>Every spell is worth at least one turn of damage for each turn it takes to come back. Over a whole cycle a magic pet deals what a physical one does: 40% hits plus a 3-turn spell every 3 turns is 1.4 turns a turn, against about 1.4 for a physical pet. The script that builds this page refuses a spell worth less than its wait.</p></article>
+      <article class="idea"><span class="pill core">Rule</span><h3>No dead turns</h3><p>No pet ever skips a turn to recover: the Iron Golem's rest is gone, and its big spell simply takes a turn longer to come back. What builds up between spells (the Golem's charge, the Magma Hound's heat) is kept between fights for the whole run.</p></article>
+    </div>
+    <p class="muted" style="font-size:15px">The petcheck proves it: a magic pet must win an ordinary fight in no more turns than a physical pet of the same tier, give or take 10%, and less than 10% of all spell damage may go unused.</p>
+  </section>
+
+  <section>
+    <h2>Later pets are stronger</h2>
+    <p style="font-size:16.5px">Every pet has a tier: the tower it comes from, in badge order. Each tier is x1.5 the one before, and a boss tame sits half a tier above its tower. So moving on pays: a Common from tier 6 (x7.6) beats a Mythic from tier 3 (x2.25, doubled to x4.5).</p>
+    <div class="badges">
+      <div class="badge"><i>1</i><span>Orc Stronghold</span><em>x1</em></div>
+      <div class="badge"><i>2</i><span>Raider's Pass</span><em>x1.5</em></div>
+      <div class="badge"><i>3</i><span>Wildwood</span><em>x2.25</em></div>
+      <div class="badge"><i>4</i><span>The Undercity</span><em>x3.4</em></div>
+      <div class="badge"><i>5</i><span>Iron Crypt</span><em>x5.1</em></div>
+      <div class="badge"><i>6</i><span>Storm Peak</span><em>x7.6</em></div>
+      <div class="badge"><i>7</i><span>Haunted Abbey</span><em>x11.4</em></div>
+      <div class="badge"><i>8</i><span>The Wild Reaches</span><em>x17.1</em></div>
+    </div>
+    <ul class="risks" style="--mythic: var(--gold-dim)">
+      <li>Bonding with a tier needs that many badges, so tiers open as you climb.</li>
+      <li>A new pet is caught at a level near the floor you catch it on, so moving on never means raising a pet from level 1 again.</li>
+      <li>Awakening, for a favourite: Essence and a trophy from the next tower's boss raise a pet one tier. Dear on purpose, so moving on is usually cheaper, but a loved pet never has to be left behind.</li>
+    </ul>
+  </section>
+
+  <section id="kits">
+    <h2>Every pet has a kit</h2>
+    <p style="font-size:16.5px">All 72 monsters and bosses in the towers, each with one skill (used on a cooldown, like the abilities today) and one passive (always on). Every kit comes from the monster's own line in <code>towers.js</code>, so each pet plays the way it fought you. Kits are built from shared pieces (turns of damage, a lost turn, poison or bleed stacks, a share through armor, healing), so 72 pets are 72 lines of data rather than 72 pieces of code. Rarity strengthens the passive, and a Legendary gains a second one.</p>
+    <p class="summary">{{SUMMARY}}</p>
+    <p style="font-size:16px">Three rules, checked by the script that builds this table, keep pets from feeling the same: no passive is used by more than two pets in the whole game; no two pets of one tower share a skill or a passive; and no two pets anywhere share both. Every magic passive is about spells, and every tower has a pet of each path, so each path has a stronger pet to move to at every tier.</p>
+    <div class="filters" role="group" aria-label="Show pets">
+      <button type="button" class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="chip phys" data-filter="path:phys" aria-pressed="false">Physical</button>
+      <button type="button" class="chip mag" data-filter="path:mag" aria-pressed="false">Magic</button>
+      <button type="button" class="chip prim" data-filter="path:prim" aria-pressed="false">Primal</button>
+      <button type="button" class="chip" data-filter="boss:yes" aria-pressed="false">Boss tames</button>
+      <button type="button" class="chip" data-filter="role:farm" aria-pressed="false">Farmers</button>
+      <button type="button" class="chip" data-filter="role:boss" aria-pressed="false">Boss killers</button>
+      <button type="button" class="chip" data-filter="role:armor" aria-pressed="false">Armor breakers</button>
+      <button type="button" class="chip" data-filter="role:deep" aria-pressed="false">Deep floors</button>
+    </div>
+    <div class="tablewrap">
+      <table class="kits">
+        <thead><tr><th>Pet</th><th>Path</th><th>Skill</th><th>Passive</th><th>Where it is the right pick</th></tr></thead>
+        <tbody><!--KITS--><!--/KITS--></tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:15px">Every name and number here is a first draft to argue with. The three starters (wolf, bear and hawk) have their own pictures and are not in this list.</p>
+    <script>
+      (function () {
+        var chips = document.querySelectorAll("#kits .chip");
+        var rows = document.querySelectorAll("#kits tbody tr");
+        function show(filter) {
+          var parts = filter.split(":");
+          var shownTowers = {};
+          rows.forEach(function (row) {
+            if (row.classList.contains("sep")) { return; }
+            var keep = filter === "all" || row.dataset[parts[0]] === parts[1];
+            row.hidden = !keep;
+            if (keep) { shownTowers[row.dataset.tower] = true; }
+          });
+          rows.forEach(function (row) {
+            if (row.classList.contains("sep")) { row.hidden = !shownTowers[row.dataset.tower]; }
+          });
+          chips.forEach(function (chip) { chip.setAttribute("aria-pressed", chip.dataset.filter === filter ? "true" : "false"); });
+        }
+        chips.forEach(function (chip) { chip.addEventListener("click", function () { show(chip.dataset.filter); }); });
+      })();
+    </script>
+  </section>
+
+  <section>
+    <h2>Making every pet viable</h2>
+    <div class="ideas">
+      <article class="idea">
+        <span class="pill core">Tower</span>
+        <h3>A niche each</h3>
+        <ul>
+          <li>Matchups: towers resist some damage types, so another path suits another tower.</li>
+          <li>Jobs: boss killer, room clearer, deep-floor survivor, farmer.</li>
+          <li>Farming passives (gold, Essence, catch chance) make a weaker fighter the right pick for a farming run.</li>
+        </ul>
+        <p class="take">Viable means "the best pet for something", not "as deep as every other pet".</p>
+      </article>
+      <article class="idea">
+        <span class="pill core">Proof</span>
+        <h3>The petcheck</h3>
+        <ul>
+          <li>A new bot test like the perk check: each pet climbs a tower, and the depths are compared.</li>
+          <li>Each pet must be the best, or near it, at its niche: its matchup tower, bosses, gold per hour.</li>
+          <li>For PvP: every pet fights every other at equal level, and no pet wins less than 40% or more than 60%.</li>
+        </ul>
+        <p class="take">This turns "every choice is viable" into numbers checked before anything ships, the way perks are checked today.</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>The ideas</h2>
+    <div class="ideas">
+      <article class="idea">
+        <span class="pill core">Core</span>
+        <h3>Catching</h3>
+        <ul>
+          <li>Every monster you beat has a small chance to join you.</li>
+          <li>Rare monsters have a much better chance and roll higher rarities.</li>
+          <li>Catching goes on while you are away, with a "caught while away" list.</li>
+          <li>Snares (bought with the new currency) raise the chance for the next fight.</li>
+        </ul>
+        <p class="take">Generous early, so the first catch comes in minutes. Then slower, and rarity carries the chase.</p>
+      </article>
+      <article class="idea">
+        <span class="pill core">Core</span>
+        <h3>Raising pets</h3>
+        <ul>
+          <li>Your bonded pet earns the experience of every fight.</li>
+          <li>Beast Essence, the new currency, trains pets in the den so they are not left behind.</li>
+          <li>Releasing a pet you do not want pays Essence, more for rarer ones.</li>
+          <li>Each pet keeps its own level, so changing your bond is a real choice.</li>
+        </ul>
+        <p class="take">One new currency, Essence, for pets. Totems stay as they are: what the Tamer earns for the other classes.</p>
+      </article>
+      <article class="idea">
+        <span class="pill core">Core</span>
+        <h3>Taming Rank, like gym badges</h3>
+        <ul>
+          <li>A permanent rank that survives ascending and becoming a legend.</li>
+          <li>Win a badge by beating a tower's great boss with the Tamer. Eight towers, eight badges.</li>
+          <li>Each badge opens the next tier of pets: tier 2 needs one badge, tier 8 needs seven.</li>
+        </ul>
+        <p class="take">Better than a Tamer-level requirement. The Tamer's level resets when it ascends, so a level-locked pet would be taken from you every ascension. A rank never takes a pet away.</p>
+      </article>
+      <article class="idea">
+        <span class="pill core">Core</span>
+        <h3>Hunting a kind on purpose</h3>
+        <ul>
+          <li>Pick a kind to track: it turns up more often in its tower.</li>
+          <li>The bestiary's ranks (10, 100, 1,000 kills) raise its catch chance.</li>
+          <li>Lures draw one kind for the next run.</li>
+        </ul>
+        <p class="take">Cheap to build: the bestiary already counts kills for every kind of monster.</p>
+      </article>
+      <article class="idea">
+        <span class="pill later">Later</span>
+        <h3>Boss tames</h3>
+        <ul>
+          <li>Bosses are never caught in a normal fight.</li>
+          <li>After enough kills of a boss, a Bond Trial opens: a harder fight that ends in a catch.</li>
+          <li>A boss pet brings its own mechanic: shield, summons, enrage, reflect.</li>
+        </ul>
+        <p class="take">The prize of the mode. The boss mechanics already exist in <code>game/bosses.js</code>, so their pets reuse them.</p>
+      </article>
+      <article class="idea">
+        <span class="pill later">Later</span>
+        <h3>Climbing rarity</h3>
+        <ul>
+          <li>Three of one kind and rarity merge into one of the next rarity.</li>
+          <li>Mythic only comes from merging.</li>
+          <li>Stars on a pet for each duplicate fed to it.</li>
+        </ul>
+        <p class="take">Gives every duplicate a use, which a catching game needs badly.</p>
+      </article>
+      <article class="idea">
+        <span class="pill later">Later</span>
+        <h3>New pets, new places</h3>
+        <ul>
+          <li>Pet-only monsters, caught only in the Wild Reaches.</li>
+          <li>Rare colour variants with their own picture.</li>
+          <li>New art made the way the tower backgrounds were made.</li>
+        </ul>
+        <p class="take">The 72 pictures we have are enough to launch. New art comes after the loop is fun.</p>
+      </article>
+      <article class="idea">
+        <span class="pill core">Core</span>
+        <h3>Why keep catching</h3>
+        <ul>
+          <li>Matchups: towers resist some kinds, so another pet suits another tower.</li>
+          <li>Feeding: duplicates merge into your bonded pet for rarity and stars.</li>
+          <li>The chase: rare, boss and Mythic pets.</li>
+          <li>Your PvP team, later, comes from the den.</li>
+        </ul>
+        <p class="take">This is what keeps one pet in the tower from making the rest of the collection pointless.</p>
+      </article>
+      <article class="idea">
+        <span class="pill later">Later</span>
+        <h3>PvP teams</h3>
+        <ul>
+          <li>A mode of its own, apart from the tower.</li>
+          <li>Pick a team of three from your den and save it.</li>
+          <li>A friend's saved team fights yours by itself, so nobody needs to be online at once.</li>
+        </ul>
+        <p class="take">The accounts and friends we have on Supabase are enough for a first version. Teams stay out of the tower, so the tower stays simple.</p>
+      </article>
+      <article class="idea">
+        <span class="pill ask">Your call</span>
+        <h3>What starting over does</h3>
+        <ul>
+          <li>Option A: pets keep everything when the Tamer ascends.</li>
+          <li>Option B: pets keep rarity and stars, but levels drop back.</li>
+          <li>Option C: like B, but the rank sets a floor the levels never fall below.</li>
+        </ul>
+        <p class="take">C. Ascending still means something, and nothing you caught ever feels lost.</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Badges, as they could look</h2>
+    <div class="badges">
+      <div class="badge got"><i>I</i><span>Orc Stronghold</span><em>opens tier 2</em></div>
+      <div class="badge got"><i>II</i><span>Raider's Pass</span><em>opens tier 3</em></div>
+      <div class="badge got"><i>III</i><span>Wildwood</span><em>opens tier 4</em></div>
+      <div class="badge"><i>IV</i><span>The Undercity</span><em>opens tier 5</em></div>
+      <div class="badge"><i>V</i><span>Iron Crypt</span><em>opens tier 6</em></div>
+      <div class="badge"><i>VI</i><span>Storm Peak</span><em>opens tier 7</em></div>
+      <div class="badge"><i>VII</i><span>Haunted Abbey</span><em>opens tier 8</em></div>
+      <div class="badge"><i>VIII</i><span>Wild Reaches</span><em>boss tames</em></div>
+    </div>
+    <p class="muted" style="font-size:15px">Each badge opens the next tier. The eighth, from the Wild Reaches, could open boss tames of every tower or a ninth tier later.</p>
+  </section>
+
+  <section>
+    <h2>Roadmap</h2>
+    <p style="font-size:16.5px">Each phase ships on its own and is playable. Sizes are rough guesses: S is a session, M two or three, L more.</p>
+    <div class="track">
+      <div class="phase done"><div class="num">0</div><div class="body">
+        <div class="row"><h3>Its own path</h3><span class="size">built</span></div>
+        <p>20261017c: the Tamer takes nothing from other classes and earns totems, and fights with one companion. The base everything else stands on.</p>
+        <p class="ships"><b>Ships:</b> push it now as the bridge, or hold it for phase 1.</p>
+      </div></div>
+      <div class="phase done"><div class="num">1</div><div class="body">
+        <div class="row"><h3>Pets replace the weapon</h3><span class="size">built, not live</span></div>
+        <p>The tamer stops attacking and gets the three path stats. The wolf, bear and hawk become three starter pets, one a path, each with its skill and passive, levels and experience, and you bond with one. The blacksmith is closed to the Tamer, and an old Tamer save bonds with the companion it was using.</p>
+        <p class="ships"><b>Built 17 October:</b> the Pets card (in place of the blacksmith), Might, Arcana and Instinct, the starter kits (Bear: Crushing Maul and Guardian; Wolf: Rend and bleeding Pack Tactics; Hawk: Storm Dive and Storm Eye), pet levels from kills, Essence training, half levels kept on ascending, and the save step. Then the hawk's lag was traced to the sweep, not its power: its 3-turn spell kills ended the sweep early, so after each death it restarted 200 floors low. Fixed (a magic pet's fight won by its first spell counts as quick), then tuned: Arcana's haste capped at every other turn, Arcana no longer gives critical damage, Storm Dive 2 dives, the hawk's old "harry" removed, wolf bites +28%. In 100 bot hours: hawk 579, bear 534, wolf 520.</p>
+      </div></div>
+      <div class="phase done"><div class="num">2</div><div class="body">
+        <div class="row"><h3>Catching and the collection</h3><span class="size">built, not live</span></div>
+        <p>Catch chance on every win, rarity rolls, the collection grid with the rarity frames, releasing for Essence, catches while away. Launch with about a dozen catchable pets, three a path plus a farmer or two, each with its kit, and the petcheck in the bot.</p>
+        <p class="ships"><b>Built 17 October:</b> every kit is a block of data in <code>classes/pets.js</code>, made of shared pieces (turns of damage, a spell, stacks, a stun, a guard, a heal...) and a passive of bonus words. All 72 monsters and bosses have one, adapted from the table below where the game had no such rule yet. A caught pet walks its path: its plain attack and its perks are its path starter's, its skill and passive its own. 1% catch on a win, ten times for a rare monster, rarity rolled; a second catch is the better rarity or Essence; a new pet starts at three quarters of the bonded pet's level; catches while away are in the report. The Bond with grid shows the pets in their rarity's frame. The bot's <code>allpets</code> and <code>pets=</code> climb with each pet.</p>
+      </div></div>
+      <div class="phase"><div class="num">3</div><div class="body">
+        <div class="row"><h3>Taming Rank and badges</h3><span class="size">S–M</span></div>
+        <p>Eight badges from the towers' great bosses, each raising what you can field. Kept through every reset.</p>
+        <p class="ships"><b>Ships:</b> the badge case, and the reason to take the Tamer through every tower.</p>
+      </div></div>
+      <div class="phase done"><div class="num">4</div><div class="body">
+        <div class="row"><h3>Hunting a kind</h3><span class="size">built, not live</span></div>
+        <p>Tracking, lures, and the bestiary's ranks feeding the catch chance.</p>
+        <p class="ships"><b>Built 17 October:</b> the Hunt row on the Pets card: pick a monster of the tower and it turns up three times as often; every bestiary rank of a kind (10, 100, 1,000 kills) makes it 50% likelier to join. No lures yet.</p>
+      </div></div>
+      <div class="phase done"><div class="num">5</div><div class="body">
+        <div class="row"><h3>Boss tames</h3><span class="size">built, not live</span></div>
+        <p>Bond Trials after enough kills of a boss, and boss pets with their own mechanic.</p>
+        <p class="ships"><b>Built 17 October:</b> all 24 bosses have kits. A boss the bestiary knows (10 kills) joins a tamer that beats it 3% of the time, never below Rare. At 100 kills it can be hunted for a Bond Trial: the next time it is met it is x1.5, and beating it tames it for certain. Also built: merging (copies of a pet merge into the next rarity, 3 then 6, 9...; Mythic only by merging), and rarity shown on the picture itself, as on this page.</p>
+      </div></div>
+      <div class="phase"><div class="num">6</div><div class="body">
+        <div class="row"><h3>Merging and Mythic</h3><span class="size">M</span></div>
+        <p>Merge three into the next rarity, stars from duplicates, Mythic from merges only.</p>
+        <p class="ships"><b>Ships:</b> a use for every duplicate.</p>
+      </div></div>
+      <div class="phase"><div class="num">7</div><div class="body">
+        <div class="row"><h3>New pets and their home</h3><span class="size">L, art-bound</span></div>
+        <p>Pet-only monsters in the Wild Reaches, colour variants, new pictures.</p>
+        <p class="ships"><b>Ships:</b> the "plethora of pets", once the loop has proved fun.</p>
+      </div></div>
+      <div class="phase"><div class="num">8</div><div class="body">
+        <div class="row"><h3>PvP teams</h3><span class="size">L</span></div>
+        <p>A separate mode: save a team of three from your den, and fight friends' saved teams by themselves.</p>
+        <p class="ships"><b>Ships:</b> a second use for the whole collection.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>To decide together</h2>
+    <div class="qs">
+      <div class="q"><b>Starting over</b><p>Option A, B or C above. <strong>I lean C.</strong></p></div>
+      <div class="q"><b>One currency or two</b><p>Essence for pets, totems for the other classes. Or fold everything into totems. <strong>I lean two.</strong></p></div>
+      <div class="q"><b>Changing your bond</b><p>Free at any time, free between runs, or at a cost? <strong>I lean free between runs</strong>, so matchups matter without constant swapping.</p></div>
+      <div class="q"><b>If your pet falls</b><p>Does the run end with it, as when the hero falls, or can the tamer fight on alone for a while?</p></div>
+      <div class="q"><b>Rank or Tamer level</b><p>What gates a strong pet. <strong>I lean rank</strong>, since the level resets.</p></div>
+      <div class="q"><b>What other classes get</b><p>Only totems, as now? Or could a pet be lent to another class for a run?</p></div>
+      <div class="q"><b>Catch odds</b><p>How soon the first catch, and how rare a Legendary should feel.</p></div>
+      <div class="q"><b>Moving path points</b><p>Can Might, Arcana and Instinct points be moved freely when you bond a pet of another path? <strong>I lean free</strong>, or swapping pets costs a whole climb.</p></div>
+      <div class="q"><b>Push 20261017c now</b><p>Held until every pet's kit is settled here first.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Risks</h2>
+    <ul class="risks">
+      <li>Every class is built around a weapon: the blacksmith, the boss weapon, keystones, perks and abilities picked by weapon. The Tamer needs a pet-shaped answer to each.</li>
+      <li>The balance bot plays weapons. It has to learn to catch and raise pets, or the mode cannot be measured.</li>
+      <li>Friends play the live game, so every old Tamer save needs a clean step into the new mode.</li>
+      <li>A catching game lives on a stream of new pets. New art is the slowest part, so the loop has to be fun with the pictures we already have.</li>
+    </ul>
+  </section>
+
+  <footer>Brainstorm only. Nothing on this page is built except phase 0. Numbers are starting guesses.</footer>
+</div>

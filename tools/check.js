@@ -407,7 +407,7 @@ try {
   playerHp = 1;
   monsterHp = 0;
   victory();
-  check("Blood Price: a kill heals nothing and adds " + percent(0.02) + " damage (boost x" + runDamageBoost() + ")", playerHp === 1 && boostAtStart === 1 && Math.abs(runDamageBoost() - fervourBonus() - 1.02) < 0.0001);
+  check("Blood Price: a kill heals nothing and adds " + percent(0.02) + " damage (boost x" + runDamageBoost() + ", " + fervourBonus() + " of it fervour, health " + playerHp + ", boost before " + boostAtStart + ", " + playerClass + " fighting a " + encounterType + ")", playerHp === 1 && Math.abs(boostAtStart - 1) < 1e-9 && Math.abs(runDamageBoost() - fervourBonus() - 1.02) < 0.0001);
   runStats.kills = 500;
   check("Blood Price stops at +" + percent(keystoneRunLimit), Math.abs(runDamageBoost() - fervourBonus() - 1 - keystoneRunLimit) < 0.0001);
 
@@ -744,6 +744,385 @@ try {
   legends = 0;
   recalcStats();
   startEncounter();
+
+  // 3h0. The Beast Tamer's own path: totems in place of fame, and nothing from the
+  // other classes. (Then an ordinary class plays the rest: legends, legend unlocks and
+  // the Second Climber are not the Tamer's.)
+  let pathProblems = [];
+  switchClass(wildTower);
+  let fameBefore = fame;
+  let totemsBefore = totems;
+  let legendLevelsWere = legendLevels;
+  let fameLevelsWere = fameLevels;
+  let totemLevelsWere = totemLevels;
+  fameLevels = { might: 5, vitality: 5 };
+  legendLevels = Object.assign({}, legendLevelsWere, { extraHand: 1, oldRoads: 3 });
+  totemLevels = { wildMight: 2, wolfTotem: 3 };
+  recalcStats();
+  gainFame(10);
+  if (fame !== fameBefore || totems !== totemsBefore + 10) {
+    pathProblems.push("the Tamer earned fame (" + (fame - fameBefore) + ") and " + (totems - totemsBefore) + " totems for 10");
+  }
+  if (Math.abs(multiplier("damage") / (perkMultiplier("damage") * trophyMultiplier("damage") * weeklyMultiplier("damage") * relicMultiplier("damage")) - 1.5625) > 1e-9) {
+    pathProblems.push("the Tamer's damage is not just its own totems (x1.25 twice)");
+  }
+  if (legendBonus("abilitySlots") !== 0 || legendBonus("startLevels") !== 0) {
+    pathProblems.push("legend unlocks work for the Tamer");
+  }
+  if (totalAscensions() !== 0 && Object.keys(classSaves).every(function (name) { return classes[name].ownPath || !(classSaves[name].ascensions > 0); })) {
+    pathProblems.push("the Tamer's ascensions count for fame");
+  }
+  bestFloor = 144;
+  let totemsThen = totems;
+  let marksThenPath = legendMarks;
+  becomeLegend();
+  if (legendMarks !== marksThenPath || totems !== totemsThen + 12 * totemsPerLegendMark) {
+    pathProblems.push("a Tamer legend at floor 144 paid " + (legendMarks - marksThenPath) + " marks and " + (totems - totemsThen) + " totems");
+  }
+  let tamerName = currentClass().name;
+
+  // A Shadow Blade's hit set up by a dodge is not lost when the fight ends first
+  assassinCounterReady = true;
+  assassinStartFight();
+  check("a Shadow Blade's dodge keeps its stronger hit for the next fight", assassinCounterReady === true);
+  assassinCounterReady = false;
+
+  // 3h0b. Pets (phase 1 of Tamer Mode): no blacksmith, pets grow from kills and Essence,
+  // ascending halves them, an old save becomes a pet, and a skill is never wasted
+  let petProblems = [];
+  // (a tamer bonds with a pet, and its weapon is that pet's path)
+  let bondWith = function (kind) {
+    pet = kind;
+    nextPet = kind;
+    weapon = petPaths[petKits[kind].path].build;
+    nextWeapon = weapon;
+    recalcStats();
+  };
+  try {
+  pets = {};
+  essence = 0;
+  bondWith("bear");
+  forgeLevels = { weapon: 7, armor: 7 };
+  if (forgeLevel("weapon") !== 0 || forgeLevel("armor") !== 0) {
+    petProblems.push("the blacksmith's work still counts for the Tamer");
+  }
+  bank = 1e9;
+  upgradeGear("weapon");
+  if (bank !== 1e9 || petOf("bear").step !== 0) {
+    petProblems.push("the blacksmith took the Tamer's gold");
+  }
+  rewardPets(petStepCost("bear") * 3);
+  if (petOf("bear").step < 2 || petOf("wolf").step !== 0 || essence <= 0) {
+    petProblems.push("a kill fed the bonded bear to step " + petOf("bear").step + ", the wolf to " + petOf("wolf").step + ", and gave " + essence + " Essence");
+  }
+  nextPet = "wolf";
+  essence = 1e9;
+  upgradeGear("weapon");
+  if (petOf("wolf").step < 10) {
+    petProblems.push("Essence trained the picked wolf only to step " + petOf("wolf").step);
+  }
+  let wolfSteps = petOf("wolf").step;
+  petsStartOver();
+  if (petOf("wolf").step !== Math.floor(wolfSteps / 2)) {
+    petProblems.push("starting over left the wolf at step " + petOf("wolf").step + " of " + wolfSteps);
+  }
+  let oldSave = upgradeSave({ version: saveVersion, classSaves: { beasttamer: { weapon: "hawk", bestFloor: 60, forgeLevels: { weapon: 9, armor: 14 } }, barbarian: { bestFloor: 30 } } });
+  if (oldSave.classSaves.beasttamer !== undefined || oldSave.totems !== 120 || oldSave.classSaves.barbarian.bestFloor !== 30 || tamerWasRestarted !== 120) {
+    petProblems.push("an old Tamer save was not started again with 120 totems, the other classes untouched");
+  }
+  let againSave = upgradeSave({ version: saveVersion, totems: 5, classSaves: { beasttamer: { weapon: "hawk", bestFloor: 60, pets: {} } } });
+  if (againSave.classSaves.beasttamer === undefined || againSave.totems !== 5) {
+    petProblems.push("a Tamer that was already started again was started again a second time");
+  }
+  tamerWasRestarted = 0;
+  bondWith("hawk");
+  recalcStats();
+  petCharge = 0;
+  petOverflow = 0;
+  let spells = 0;
+  for (let turn = 0; turn < 9; turn++) {
+    monsterMaxHp = 1e15;
+    monsterHp = 1e15;
+    let before = monsterHp;
+    tamerAttack();
+    if (before - monsterHp > playerAttack * hawkDive) {
+      spells = spells + 1;
+    }
+  }
+  if (spells !== 3) {
+    petProblems.push("Storm Dive came " + spells + " times in 9 turns, not 3");
+  }
+  if (quickFightTurns() !== 3) {
+    petProblems.push("a hawk's fight won by its first spell (turn 3) did not count as quick for the sweep, it counted " + quickFightTurns() + " turns");
+  }
+  // Arcana's haste has a top: however much of it, a spell at most every other turn
+  skillLevels = { hawkMastery: 200 };
+  recalcStats();
+  petCharge = 0;
+  spells = 0;
+  for (let turn = 0; turn < 10; turn++) {
+    monsterMaxHp = 1e300;
+    monsterHp = 1e300;
+    let before = petCharge;
+    tamerAttack();
+    if (petCharge < before + 1) {
+      spells = spells + 1;
+    }
+  }
+  if (spells !== 5) {
+    petProblems.push("with 200 levels of Arcana Storm Dive came " + spells + " times in 10 turns, not 5");
+  }
+  skillLevels = {};
+  recalcStats();
+  bondWith("bear");
+  if (quickFightTurns() !== cruiseTurns) {
+    petProblems.push("the bear's quick fights are not the usual " + cruiseTurns + " turns");
+  }
+  bondWith("hawk");
+  petCharge = petEvery();
+  monsterHp = 5;
+  tamerAttack();
+  let left = petOverflow;
+  monsterMaxHp = 1e9;
+  monsterHp = 1e9;
+  tamerStartFight();
+  if (!(left > 0) || monsterHp !== 1e9 - Math.round(left) || petOverflow !== 0) {
+    petProblems.push("a spell's damage past the kill did not reach the next monster");
+  }
+
+  // 3h0c. Caught pets (phase 2): every kit is whole and its skill hits; a beaten monster
+  // with a kit can join, never a boss; a second catch is the better rarity or Essence; a
+  // caught pet uses its path's perks and its own passive
+  let monsterNames = [];
+  for (let towerName in towers) {
+    for (let type of towers[towerName].monsters.concat(towers[towerName].bosses || [])) {
+      monsterNames.push(type.name);
+    }
+  }
+  for (let kind of Object.keys(petKits)) {
+    let kit = petKits[kind];
+    if (petPaths[kit.path] === undefined || damageTypes[kit.type] === undefined || typeof kit.use !== "function" || typeof kit.bonus !== "object") {
+      petProblems.push("the kit of " + kind + " has a wrong path, damage type, skill or passive");
+      continue;
+    }
+    if (kit.monster !== undefined && !monsterNames.includes(kit.monster)) {
+      petProblems.push(kind + " is caught from " + kit.monster + ", who is in no tower");
+    }
+    pets[kind] = { step: 20, xp: 0, rarity: 0 };
+    bondWith(kind);
+    monsterMaxHp = 1e12;
+    monsterHp = 1e12;
+    petCharge = petEvery();
+    tamerAttack();
+    if (!(monsterHp < 1e12) || isNaN(monsterHp)) {
+      petProblems.push("the skill of " + kind + " dealt no damage (monster health " + monsterHp + ")");
+    }
+  }
+  pets = {};
+  bondWith("bear");
+  pets.bear.step = 40;
+  let realRandom = Math.random;
+  Math.random = function () { return 0; };
+  monsterKind = "Rhino";
+  encounterType = "boss";
+  monsterIsRare = true;
+  tryCatch();
+  if (pets.rhino !== undefined) {
+    petProblems.push("a boss was caught");
+  }
+  encounterType = "monster";
+  tryCatch();
+  if (petsCaught[petsCaught.length - 1] !== "Rare Rhino") {
+    petProblems.push("the catch is not on the list for the report of time away: " + petsCaught.join(", "));
+  }
+  if (pets.rhino === undefined || pets.rhino.rarity !== 2 || pets.rhino.step !== Math.floor(40 * petCatchStep)) {
+    petProblems.push("a rare Rhino beaten was not caught as a Rare at three quarters of the bear's level: " + JSON.stringify(pets.rhino));
+  }
+  // Copies: no better is kept as a copy, three merge into the next rarity, and a Mythic's
+  // copies are let go for Essence; no catch ever rolls Mythic
+  essence = 0;
+  tryCatch();
+  if (pets.rhino.rarity !== 2 || pets.rhino.copies !== 1 || essence !== 0) {
+    petProblems.push("a second Rare Rhino was not kept as a copy: " + JSON.stringify(pets.rhino));
+  }
+  pets.rhino.copies = petCopiesToMerge("rhino") - 2;
+  tryCatch();
+  mergePet("rhino");
+  if (pets.rhino.rarity !== 2) {
+    petProblems.push("a Rare merged with one copy too few");
+  }
+  tryCatch();
+  mergePet("rhino");
+  if (pets.rhino.rarity !== 3 || pets.rhino.copies !== 0 || petCopiesToMerge("rhino") !== petMergeCopies * 4) {
+    petProblems.push("a Rare Rhino's " + petMergeCopies * 3 + " copies did not merge it into an Epic, or an Epic does not need " + petMergeCopies * 4 + ": " + JSON.stringify(pets.rhino));
+  }
+  pets.rhino.rarity = petRarities.length - 1;
+  tryCatch();
+  if (!(essence > 0) || (pets.rhino.copies || 0) !== 0) {
+    petProblems.push("a Mythic Rhino's copy was not let go for Essence");
+  }
+  pets.rhino.rarity = 2;
+  let mythicRolled = false;
+  for (let roll of [0, 0.5, 0.9, 0.99, 0.999999, 0.9999999999]) {
+    Math.random = function () { return roll; };
+    if (rollRarity(false) === petRarities.length - 1 || rollRarity(true) === petRarities.length - 1) {
+      mythicRolled = true;
+    }
+  }
+  Math.random = function () { return 0; };
+  if (mythicRolled) {
+    petProblems.push("a catch rolled Mythic");
+  }
+  monsterKind = "Nobody";
+  encounterType = "monster";
+  tryCatch();
+  if (Object.keys(pets).length !== 2) {
+    petProblems.push("a monster with no kit was caught");
+  }
+  // A boss: never before the bestiary knows it, then as a Rare at least
+  let bestiaryBefore = bestiary;
+  bestiary = {};
+  monsterKind = "Pride Lord";
+  encounterType = "boss";
+  monsterIsRare = false;
+  tryCatch();
+  if (pets.prideLord !== undefined) {
+    petProblems.push("a boss the bestiary does not know was tamed");
+  }
+  bestiary = { "Pride Lord": bestiaryRanks[0] };
+  tryCatch();
+  if (pets.prideLord === undefined || pets.prideLord.rarity < 2) {
+    petProblems.push("a known boss was not tamed as a Rare at least: " + JSON.stringify(pets.prideLord));
+  }
+  delete pets.prideLord;
+  // A Bond Trial: a hunted boss the bestiary knows at petTrialKnown fights stronger, and
+  // joins for certain if beaten
+  bestiary = { "Pride Lord": bestiaryRanks[petTrialKnown - 1] };
+  trackedPet = "Pride Lord";
+  let trialTower = tower;
+  let trialFloor = floor;
+  tower = "beasttamer";
+  let prideFloor = 5 * (towers.beasttamer.bosses.findIndex(function (type) { return type.name === "Pride Lord"; }) + 1);
+  floor = prideFloor;
+  spawnMonster(false);
+  spawnMonster(true);
+  let trialHp = monsterMaxHp;
+  if (!bondTrial || monsterKind !== "Pride Lord") {
+    petProblems.push("a hunted Pride Lord known " + bestiaryRanks[petTrialKnown - 1] + " times did not fight a Bond Trial (" + monsterKind + ", floor " + floor + ")");
+  }
+  encounterType = "boss";
+  Math.random = function () { return 0.9999; };
+  tryCatch();
+  Math.random = function () { return 0; };
+  encounterType = "monster";
+  if (pets.prideLord === undefined || trackedPet !== "") {
+    petProblems.push("a Bond Trial won did not tame the Pride Lord for certain, or the hunt did not end");
+  }
+  trackedPet = "Pride Lord";
+  spawnMonster(true);
+  if (bondTrial || Math.abs(monsterMaxHp * petTrialPower - trialHp) > 2) {
+    petProblems.push("a Pride Lord already tamed fought a Bond Trial again, or a trial was not " + petTrialPower + " times as strong");
+  }
+  trackedPet = "";
+  bondTrial = false;
+  delete pets.prideLord;
+  tower = trialTower;
+  floor = trialFloor;
+  bestiary = bestiaryBefore;
+  encounterType = "monster";
+  monsterIsRare = true;
+  Math.random = function () { return 0.9999; };
+  monsterKind = "Viper";
+  tryCatch();
+  if (pets.viper !== undefined) {
+    petProblems.push("a catch happened when the chance failed");
+  }
+  Math.random = realRandom;
+
+  // Hunting a kind: it turns up petTrackWeight times as often, and the bestiary's ranks
+  // make it likelier to join
+  let towerThen = tower;
+  let floorThen = floor;
+  tower = "beasttamer";
+  floor = 300;
+  let kinds = towers[tower].monsters.filter(function (type) { return type.minFloor <= floor; }).length;
+  let rhinos = 0;
+  trackedPet = "Rhino";
+  for (let i = 0; i < 6000; i++) {
+    if (pickMonsterType(false).name === "Rhino") {
+      rhinos = rhinos + 1;
+    }
+  }
+  let expected = petTrackWeight / (kinds - 1 + petTrackWeight);
+  if (Math.abs(rhinos / 6000 - expected) > 0.03) {
+    petProblems.push("a hunted Rhino turned up " + percent(rhinos / 6000) + " of the time, not about " + percent(expected));
+  }
+  trackedPet = "";
+  tower = towerThen;
+  floor = floorThen;
+  let bestiaryThen = bestiary;
+  bestiary = {};
+  let unknownChance = petCatchChanceOf("Rhino");
+  bestiary = { Rhino: bestiaryRanks[1] };
+  if (Math.abs(petCatchChanceOf("Rhino") / unknownChance - (1 + 2 * petBestiaryCatch)) > 1e-9) {
+    petProblems.push("a Rhino the bestiary knows at rank 2 is not " + (1 + 2 * petBestiaryCatch) + " times as easy to catch");
+  }
+  if (Math.abs(unknownChance / petCatchChanceOf("Viper") - petCatchAgain / petCatchChance) > 1e-9) {
+    petProblems.push("a kind already caught is not " + petCatchAgain / petCatchChance + " times as likely to join as a new one");
+  }
+  bestiary = bestiaryThen;
+  if (!ownedPets().includes("rhino") || ownedPets().includes("viper") || !ownedPets().includes("hawk")) {
+    petProblems.push("the pets a tamer has are " + ownedPets().join(", "));
+  }
+  chooseWeapon("rhino");
+  startRunGear();
+  if (pet !== "rhino" || weapon !== "bear" || petBonus("armorPercent") !== 1 || tamerGuard() !== 0 || !fitsBuild({ build: "bear" }) || fitsBuild({ build: "hawk" })) {
+    petProblems.push("bonding with the Rhino gave pet " + pet + ", weapon " + weapon + ", armorPercent " + petBonus("armorPercent") + ", guard " + tamerGuard());
+  }
+  petsStartOver();
+  if (pets.rhino.rarity !== 2 || pets.rhino.step !== Math.floor(Math.floor(40 * petCatchStep) / 2)) {
+    petProblems.push("ascending did not keep the Rhino Rare at half its level: " + JSON.stringify(pets.rhino));
+  }
+  pets.rhino.step = 60;
+  recalcStats();
+  let commonAttack = playerAttack;
+  pets.rhino.rarity = 4;
+  recalcStats();
+  if (Math.abs(playerAttack / commonAttack - petRarities[4].power / petRarities[2].power) > 0.01) {
+    petProblems.push("a Legendary Rhino's attack is x" + (playerAttack / commonAttack).toFixed(2) + " a Rare one's");
+  }
+  bondWith("bear");
+  pets = {};
+  essence = 0;
+  bank = 0;
+  forgeLevels = { weapon: 0, armor: 0 };
+  recalcStats();
+  } catch (error) { petProblems.push("ERROR " + error.message + " " + error.stack); }
+  check("pets: no blacksmith for the " + tamerName + ", kills feed the bonded pet, Essence trains any pet, ascending halves them, an old Tamer starts again once with its totems, a spell every 3 turns and never more than every other, a fight won by the first spell counts as quick, nothing past a kill wasted; every kit hits, monsters with a kit are caught, a boss only once the bestiary knows it or by a Bond Trial, a second catch is the better rarity or a copy, three copies merge, Mythic only by merging, a caught pet uses its path and its own passive, a hunted kind turns up more and the bestiary helps catch it" + (petProblems.length === 0 ? "" : ": " + petProblems.join("; ")), petProblems.length === 0);
+
+  switchClass("barbarian");
+  if (Math.abs(totemMultiplier("damage") - 1.331) > 1e-9) {
+    pathProblems.push("the Wolf Totem does not multiply another class's damage by 1.1 a level");
+  }
+  tower = wildTower;
+  let wildTotems = wildBossTotemsAt(30);
+  if (!(wildTotems > 0) || Math.abs(wildTotems - bossFameAt(30) * wildBossTotems) > 1e-9) {
+    pathProblems.push("a Wild Reaches boss pays another class " + wildTotems + " totems");
+  }
+  tower = playerClass;
+  if (wildBossTotemsAt(30) !== 0) {
+    pathProblems.push("a boss of another tower pays totems");
+  }
+  showTab("ascension");
+  if (document.getElementById("totem-card").hidden || document.getElementById("totem-upgrades").children.length !== totemUpgrades.length || document.getElementById("fame-card").hidden) {
+    pathProblems.push("the Ascension tab does not show both fame and totems to the Barbarian");
+  }
+  fameLevels = fameLevelsWere;
+  legendLevels = legendLevelsWere;
+  totemLevels = totemLevelsWere;
+  totems = totemsBefore;
+  recalcStats();
+  check("the " + tamerName + "'s own path: totems in place of fame, legends paid in totems, no fame, legend unlocks or ascensions from others; totems buy for it and for the others; Wild Reaches bosses pay totems" + (pathProblems.length === 0 ? "" : ": " + pathProblems.join("; ")), pathProblems.length === 0);
 
   // 3h. Legend: becoming one pays the right marks, starts the class over, and keeps what it should
   let fameThen = fame;

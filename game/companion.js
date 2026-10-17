@@ -32,8 +32,9 @@ function secondClimberOpen() {
 
 // Is there a second climber, and can it climb?
 function companionReady() {
+  // (the Beast Tamer walks its own path: it never climbs for another class)
   return secondClimberOpen() && companionClass !== "" && companionClass !== playerClass
-    && classes[companionClass] !== undefined && classIsOpen(companionClass);
+    && classes[companionClass] !== undefined && classIsOpen(companionClass) && !classes[companionClass].ownPath;
 }
 
 // The player's class has taken a turn (called from step in game/fights.js)
@@ -119,7 +120,7 @@ function showHeroStrip() {
   if (line.hidden) {
     return;
   }
-  let others = Object.keys(classes).filter(function (name) { return name !== playerClass && classIsOpen(name); });
+  let others = Object.keys(classes).filter(function (name) { return name !== playerClass && classIsOpen(name) && !classes[name].ownPath; });
   let key = playerClass + "/" + others.join(",") + "/" + companionClass;
   if (key !== companionListShown) {
     companionListShown = key;

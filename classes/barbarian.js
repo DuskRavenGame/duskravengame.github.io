@@ -161,10 +161,10 @@ classes.barbarian = {
   // Extra choices at every BREAKTHROUGH (floor 150 and beyond), beside the ones every
   // class has. One for each build: it multiplies that build's own damage again.
   breakthroughs: [
-    { id: "deeperWounds", name: "Deeper Wounds", text: "Axe: bleeding damage x1.3", multiply: { bleed: 1.3 } },
+    { id: "deeperWounds", name: "Deeper Wounds", text: "Axe: bleeding damage x1.6", multiply: { bleed: 1.6 } },
     { id: "keenerEdge", name: "Keener Edge", text: "Sword: critical hit damage x1.5", multiply: { swordCrit: 1.5 } },
-    { id: "heavierClub", name: "Heavier Club", text: "Club: damage of every hit x1.4", multiply: { club: 1.4 } },
-    { id: "redMist", name: "Red Mist", text: "Rage x1.5", multiply: { rage: 1.5 } }
+    { id: "heavierClub", name: "Heavier Club", text: "Club: damage of every hit x1.5", multiply: { club: 1.5 } },
+    { id: "redMist", name: "Red Mist", text: "Rage x2 and attack x1.3", multiply: { rage: 2, attack: 1.3 } }
   ],
 
   // Special moves on a cooldown, put in the slots that open on floors 10, 35 and 75

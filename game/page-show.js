@@ -449,11 +449,204 @@ function gearStat(slot, step) {
 
 // Can the blacksmith's next step for either piece be paid for?
 function canAffordForge() {
+  if (fightsWithPets()) {
+    return essence >= petTrainCost(petInPicker());
+  }
   return bank >= forgeCostOf("weapon") || bank >= forgeCostOf("armor");
 }
 
+// The pet picked in the picker: the one the Train button trains
+function petInPicker() {
+  return petKits[nextPet] !== undefined ? nextPet : pet;
+}
+
+// The "Bond with" grid of a tamer: a tile for each pet it has, with its picture, its name
+// and a frame in its rarity's colour. Made again when it catches one; the picked one glows.
+function showPetButtons() {
+  let box = document.getElementById("weapon-buttons");
+  box.classList.add("pet-grid");
+  let owned = ownedPets();
+  let shown = playerClass + owned.map(function (kind) { return kind + petRarityOf(kind); }).join();
+  if (box.dataset.shown !== shown) {
+    box.dataset.shown = shown;
+    box.innerHTML = "";
+    for (let kind of owned) {
+      let tile = document.createElement("button");
+      tile.id = "weapon-" + kind;
+      tile.title = petRarities[petRarityOf(kind)].name + " " + petKits[kind].path + " pet. " + petKits[kind].skill + ": " + petKits[kind].skillText + ". " + petKits[kind].passive + ": " + petKits[kind].passiveText + ".";
+      tile.onclick = function () {
+        chooseWeapon(kind);
+      };
+      let picture = document.createElement("img");
+      picture.src = petArt(kind);
+      picture.alt = "";
+      let name = document.createElement("span");
+      name.className = "pet-name";
+      name.textContent = petKits[kind].name;
+      tile.append(picture, name);
+      box.appendChild(tile);
+    }
+  }
+  let picked = petInPicker();
+  for (let kind of owned) {
+    document.getElementById("weapon-" + kind).className = "pet-tile frame-" + petRarityOf(kind) + (kind === picked ? " chosen" : "");
+  }
+  let catchable = Object.keys(petKits).filter(function (kind) { return petKits[kind].monster !== undefined; });
+  let caught = catchable.filter(function (kind) { return pets[kind] !== undefined; });
+  document.getElementById("weapon-picker-title").textContent = "Bond with · " + caught.length + " of " + catchable.length + " caught";
+}
+
+// The Hunt row of a tamer: a tile for each monster of this tower that can be caught,
+// with its kills and catch chance on hover; the hunted one glows, and a pet already
+// caught has its rarity's frame
+function showHunt(withPets) {
+  let picker = document.getElementById("hunt-picker");
+  picker.hidden = !withPets;
+  if (!withPets) {
+    return;
+  }
+  let box = document.getElementById("hunt-buttons");
+  let here = towers[tower].monsters.concat(towers[tower].bosses).filter(function (type) { return petFromMonster(type.name) !== ""; });
+  let shown = tower + here.length;
+  if (box.dataset.shown !== shown) {
+    box.dataset.shown = shown;
+    box.innerHTML = "";
+    for (let type of here) {
+      let tile = document.createElement("button");
+      tile.id = "hunt-" + petFromMonster(type.name);
+      tile.onclick = function () {
+        trackPet(type.name);
+      };
+      let picture = document.createElement("img");
+      picture.src = type.art;
+      picture.alt = "";
+      let name = document.createElement("span");
+      name.className = "pet-name";
+      name.textContent = type.name;
+      tile.append(picture, name);
+      box.appendChild(tile);
+    }
+  }
+  for (let type of here) {
+    let kind = petFromMonster(type.name);
+    let tile = document.getElementById("hunt-" + kind);
+    tile.className = "pet-tile" + (pets[kind] === undefined ? " uncaught" : " frame-" + petRarityOf(kind)) + (type.name === trackedPet ? " chosen" : "");
+    tile.title = type.name + ": " + big(killsOf(type.name)) + " beaten. " + huntChanceText(type.name) + (pets[kind] === undefined ? "" : " You have a " + petRarities[petRarityOf(kind)].name + " one.");
+  }
+  let hunted = here.find(function (type) { return type.name === trackedPet; });
+  let note = "Pick a kind to hunt: it turns up " + petTrackWeight + " times as often here. The more of a kind you have beaten, the likelier it is to join you. A boss you have beaten " + bestiaryRanks[petTrialKnown - 1] + " times can be hunted for a Bond Trial.";
+  if (hunted !== undefined) {
+    note = "Hunting the " + trackedPet + ". " + huntChanceText(trackedPet) + " Pick it again to stop.";
+  }
+  document.getElementById("hunt-note").textContent = note;
+}
+
+// What hunting a kind does for it, in a sentence: an ordinary monster turns up more and
+// may join; a boss fights its Bond Trial once the bestiary knows it well enough
+function huntChanceText(name) {
+  let kind = petFromMonster(name);
+  if (petKits[kind].boss !== true) {
+    return "Hunted, it turns up " + petTrackWeight + " times as often; it joins you " + percent(petCatchChanceOf(name)) + " of the time (ten times that when rare).";
+  }
+  if (pets[kind] !== undefined) {
+    return "Tamed already.";
+  }
+  if (bestiaryRank(name) < petTrialKnown) {
+    return "A Bond Trial opens after " + bestiaryRanks[petTrialKnown - 1] + " wins against it (" + big(killsOf(name)) + " so far); until then, " + (bestiaryRank(name) >= petBossKnown ? percent(petBossCatch) + " of wins tame it." : "it cannot be tamed.");
+  }
+  return "Hunted, its next fight is a Bond Trial: it is " + petTrialPower + " times as strong, and joins you if you win.";
+}
+
+// Under the grid, the pet picked, in a few words: its path, its skill and its passive.
+// What its plain attack does, in numbers, is on hover. (It borrows the class's own
+// description by pretending for a moment to be bonded with the picked pet.)
+function showPetNote() {
+  let kind = petInPicker();
+  let kit = petKits[kind];
+  let bonded = pet;
+  let using = weapon;
+  pet = kind;
+  weapon = petPaths[kit.path].build;
+  let plain = tamerPlainInfo() + " Damage: " + typeNames(tamerDamageTypes()) + ".";
+  let every = petEvery();
+  pet = bonded;
+  weapon = using;
+
+  let note = document.getElementById("weapon-picker-note");
+  note.innerHTML = "";
+  note.title = plain;
+  let tag = document.createElement("span");
+  tag.className = "kind-tag";
+  tag.textContent = petRarities[petRarityOf(kind)].name + " · " + kit.path + " · " + petPaths[kit.path].stat;
+  let skill = document.createElement("div");
+  skill.innerHTML = "<b></b> every " + every + " turns: ";
+  skill.querySelector("b").textContent = kit.skill;
+  skill.append(kit.skillText + ".");
+  let passive = document.createElement("div");
+  passive.innerHTML = "<b></b>: ";
+  passive.querySelector("b").textContent = kit.passive;
+  passive.append(kit.passiveText + ".");
+  note.append(tag, skill, passive);
+  if (kind !== pet) {
+    let later = document.createElement("div");
+    later.textContent = "You are still bonded with your " + petKits[pet].name + ": the change is made after your next fall.";
+    note.append(later);
+  }
+}
+
+// A pet's rarity (0 is Common; a starter is always Common)
+function petRarityOf(kind) {
+  return pets[kind] === undefined ? 0 : pets[kind].rarity || 0;
+}
+
+// A pet's picture: the monster it was caught from, or the tamer's own with the starter
+function petArt(kind) {
+  let monster = petKits[kind].monster;
+  for (let towerName in towers) {
+    for (let type of towers[towerName].monsters) {
+      if (type.name === monster) {
+        return type.art;
+      }
+    }
+  }
+  return (currentClass().artWith || {})[kind] || currentClass().art;
+}
+
+// The blacksmith's card, as a class that fights with pets sees it: its Pets
+function showPets() {
+  let kind = petInPicker();
+  let pet = petOf(kind);
+  let kit = petKits[kind];
+  let note = petRarities[pet.rarity || 0].name + " " + kit.path + " pet · " + gearStat("weapon", pet.step) + " and " + gearStat("armor", pet.step) + " · experience " + big(pet.xp) + " / " + big(petStepCost(kind)) + ". Essence: " + big(essence) + ".";
+  fillRow("forge-weapon", petName(kind), note, "Train: " + big(petTrainCost(kind)) + " Essence", essence < petTrainCost(kind));
+  document.getElementById("forge-weapon-title").className = "row-title rarity-" + Math.min(5, tierOfStep(pet.step));
+  document.getElementById("forge-armor-row").hidden = true;
+  document.getElementById("forge-all").hidden = true;
+
+  // Copies of it merge into the next rarity
+  let merge = document.getElementById("pet-merge");
+  let copies = pet.copies || 0;
+  let rarity = pet.rarity || 0;
+  merge.hidden = kit.monster === undefined;
+  let needed = kit.monster === undefined || pets[kind] === undefined ? 0 : petCopiesToMerge(kind);
+  merge.disabled = copies < needed || rarity >= petRarities.length - 1;
+  merge.textContent = rarity >= petRarities.length - 1
+    ? "Mythic: nothing to merge into"
+    : "Merge " + needed + " copies into " + petRarities[rarity + 1].name + " (you have " + copies + ")";
+}
+
 function showBlacksmith() {
-  for (let slot of ["weapon", "armor"]) {
+  let withPets = fightsWithPets();
+  document.getElementById("smith-title").textContent = withPets ? "Pets" : "Blacksmith";
+  document.getElementById("smith-note").textContent = withPets
+    ? "Kills raise your bonded pet; Essence trains any of them. A new bond starts after your next fall, and ascending halves every pet's levels."
+    : "Improves your equipment for gold from your bank, one step at a time. After +9 it becomes the next tier. You keep it when you fall, but not when you ascend.";
+  document.getElementById("weapon-picker-title").textContent = withPets ? "Bond with" : "Fight with";
+  document.getElementById("forge-armor-row").hidden = false;
+  document.getElementById("forge-all").hidden = false;
+  document.getElementById("pet-merge").hidden = true;
+
+  for (let slot of withPets ? [] : ["weapon", "armor"]) {
     let step = forgeLevel(slot);
     let note = gearStat(slot, step) + ". Next: " + gearName(slot, step + 1) + ", " + gearStat(slot, step + 1) + ".";
 
@@ -462,6 +655,9 @@ function showBlacksmith() {
   }
 
   document.getElementById("forge-all").disabled = !canAffordForge();
+  if (withPets) {
+    showPets();
+  }
 
   // The boss weapon: only with the legend unlock, and only for a class with a choice
   document.getElementById("boss-weapon-picker").hidden = totalBonus("secondWeapon") < 1 || Object.keys(buildKinds()).length < 2;
@@ -501,6 +697,14 @@ function showBlacksmith() {
   // A class with only one kind of gear has nothing to pick between
   document.getElementById("weapon-picker").hidden = Object.keys(currentClass().gearTypes).length < 2;
   showFavourite("weapon-buttons", "weapon-" + nextWeapon);
+  if (withPets) {
+    showPetButtons();
+  }
+  showHunt(withPets);
+  if (withPets) {
+    showPetNote();
+    return;
+  }
 
   // What the picked kind does. The class's own description is written for the gear
   // being used, so this borrows it by pretending for a moment to use the picked one.
@@ -640,10 +844,12 @@ function fameEffectText(item) {
 
 // For example "34 fame in 1h 12m (28.3 an hour)"
 function fameRateText(fameEarned, seconds) {
+  // (a class on its own path earns totems in place of fame)
+  let purse = onOwnPath() ? " totems" : " fame";
   if (seconds < 60) {
-    return big(fameEarned) + " fame so far";
+    return big(fameEarned) + purse + " so far";
   }
-  return big(fameEarned) + " fame in " + timeText(seconds) + " (" + big(fameEarned / (seconds / 3600)) + " an hour)";
+  return big(fameEarned) + purse + " in " + timeText(seconds) + " (" + big(fameEarned / (seconds / 3600)) + " an hour)";
 }
 
 // A sentence to help decide when to ascend. Fame per hour falls the longer an
@@ -669,7 +875,13 @@ function ascendAdvice() {
 }
 
 function showAscension() {
-  document.getElementById("fame-owned").textContent = big(fame);
+  // The Beast Tamer walks its own path: its purse is totems, and fame is not for it
+  document.getElementById("purse-name").textContent = onOwnPath() ? "Totems" : "Fame";
+  document.getElementById("fame-owned").textContent = big(onOwnPath() ? totems : fame);
+  document.getElementById("own-path-note").hidden = !onOwnPath();
+  document.getElementById("fame-note").hidden = onOwnPath();
+  document.getElementById("fame-card").hidden = onOwnPath();
+  showTotems();
   document.getElementById("this-ascension").textContent = fameRateText(ascensionFame, ascensionSeconds);
   if (ascensions === 0) {
     document.getElementById("last-ascension").textContent = "none yet";
@@ -726,6 +938,27 @@ function showAscension() {
   }
 }
 
+// The totem upgrades, once the Beast Tamer is open (or totems have been earned anyway)
+function showTotems() {
+  let card = document.getElementById("totem-card");
+  card.hidden = !classIsOpen(wildTower) && totems === 0;
+  if (card.hidden) {
+    return;
+  }
+  document.getElementById("totems-owned").textContent = big(totems);
+
+  for (let item of totemUpgrades) {
+    let name = "totem-" + item.id;
+    let title = item.name + " · level " + totemLevel(item.id);
+    let note = totemIsForMe(item) ? item.text + " (this class)" : item.text;
+    if (totemUpgradeIsMaxed(item)) {
+      fillRow(name, title, note, "Max", true);
+    } else {
+      fillRow(name, title, note, big(totemCost(item)) + " totems", totems < totemCost(item));
+    }
+  }
+}
+
 // ----- What to do next -----
 // A short list under the tower that tells the player what needs their attention
 // and what they are working toward. At most three lines, most urgent first.
@@ -742,8 +975,21 @@ function hasPerkToPick() {
 }
 
 function canBuyFameUpgrade() {
+  if (onOwnPath()) {
+    return false;
+  }
   for (let item of fameUpgrades) {
     if (fameUpgradeIsUnlocked(item) && !fameUpgradeIsMaxed(item) && fame >= fameCost(item)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// A totem upgrade for the class being played that the totems will pay for
+function canBuyTotemUpgrade() {
+  for (let item of totemUpgrades) {
+    if (totemIsForMe(item) && !totemUpgradeIsMaxed(item) && totems >= totemCost(item)) {
       return true;
     }
   }
@@ -799,7 +1045,8 @@ const waitingThings = [
   { tab: "legend", words: function () { return "Legend unlock"; }, when: canBuyLegendUnlock },
   { tab: "ascension", words: function () { return "Ascend"; }, when: canAscend },
   { tab: "ascension", words: function () { return "Fame upgrade"; }, when: canBuyFameUpgrade },
-  { tab: "town", words: function () { return "Blacksmith"; }, when: canAffordForge },
+  { tab: "ascension", words: function () { return "Totem upgrade"; }, when: canBuyTotemUpgrade },
+  { tab: "town", words: function () { return fightsWithPets() ? "Train a pet" : "Blacksmith"; }, when: canAffordForge },
   { tab: "friends", words: function () { return "Friends"; }, when: function () { return friendsWaiting; } }
 ];
 
@@ -1192,6 +1439,7 @@ function updateScreen() {
     art = "";
   }
   drawPicture("player-icon", currentClass().icon, heroArt());
+  drawPetBeside();
   document.getElementById("player-name").textContent = currentClass().name;
   drawPicture("monster-icon", icon, art);
 

@@ -154,6 +154,15 @@ const tips = [
     text: "Pick another class in the line above the fight. It climbs its own tower by itself while you play.",
     when: function () { return legendLevel("secondClimber") > 0; } },
 
+  // ----- The Beast Tamer's pets -----
+  { id: "petCaught", tab: "town", title: "A new pet",
+    text: "A monster you beat joined you. Bond with it on the Pets card; it fights beside you after your next fall.",
+    when: function () { return fightsWithPets() && ownedPets().some(function (kind) { return petKits[kind].monster !== undefined; }); } },
+
+  { id: "petHunt", tab: "town", title: "Hunting a kind",
+    text: "Pick a monster in the Hunt row to meet it " + petTrackWeight + " times as often. Copies of a pet you have merge into the next rarity.",
+    when: function () { return fightsWithPets() && ownedPets().length >= 5; } },
+
   // ----- Always last: it waits until nothing else does -----
   { id: "guide", tab: "save", title: "Tips and the Guide",
     text: "A short tip like this one appears when you reach something new. Every tip you have seen is kept in the Guide, under the game's name.",

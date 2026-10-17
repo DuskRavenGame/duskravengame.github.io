@@ -13,6 +13,30 @@
 
 const gameUpdates = [
   {
+    version: "20261017c",
+    title: "The legendary Beast Tamer",
+    changes: [
+      "The Beast Tamer is now a legendary class, far stronger than the others, and it no longer fights itself: its pet does everything, and everything you level and buy on the tamer makes the pet stronger.",
+      "Pets in place of the blacksmith. The wolf, the bear and the hawk are pets, each with its own level (Young, Grown, Seasoned...). Every kill gives the pet you are bonded with experience, as much as the gold it drops, and Essence, which trains any pet on the Town tab. Pick another pet to bond with it after your next fall. Ascending costs every pet half its levels.",
+      "Three paths: the Bear is Physical (full hits, and Crushing Maul every 6 turns, which knocks the enemy down), the Wolf is Primal (every bite bleeds, and Rend every 5 turns), and the Hawk is Magic (weak dives, and Storm Dive, a lightning spell, every 3 turns, after which the enemy's next attack misses; Arcana brings it back faster, up to every other turn). The hawk no longer harries the enemy. The old mastery skills are now Might, Instinct and Arcana.",
+      "Catch pets. Every monster a Tamer beats now and then joins it, as a Common, Uncommon, Rare, Epic or Legendary pet (a rare monster never below Rare; rarer pets have more attack and health). All 72 monsters and bosses of the eight towers can be caught, each with its own skill and passive, and each walks one of the three paths, so the perks of its path work for it. Catches while you are away are listed when you come back.",
+      "Bosses can be tamed too: once you have beaten one ten times, every win against it has a small chance to bring it to your side, never below Rare. Beat it a hundred times and you can hunt it for a Bond Trial: the next time you meet it, it is half again as strong, and if you win it joins you for certain.",
+      "Your bonded pet stands beside you in the fight, and a pet's rarity shows on its picture: the colours shift and a glow grows from Rare to Mythic.",
+      "Bond with any pet you have on the Pets card: a grid of your pets, framed in their rarity's colour. Catching one you have again gives the better rarity of the two; if it was no better it is kept as a copy, and copies merge into the next rarity (the Merge button: 3 for a Common, 6 for an Uncommon, and so on). A kind you have already joins you far less often than a new one. Mythic, above Legendary, is reached only by merging.",
+      "Assassin: a dodge with the Shadow Blade sets up its stronger hit even when the fight ends first: the hit now lands on the next monster instead of being lost.",
+      "The Tamer's perks, skills, relics and abilities now name a path (Physical, Primal or Magic) instead of an animal: every pet of that path uses them.",
+      "Hunt a kind: pick a monster of the tower in the Hunt row, and it turns up three times as often. The more of a kind you have beaten, the likelier it is to join you.",
+      "A skill's turns carry from one fight to the next, and its damage past a kill lands on the next monster, so a slow spell is never wasted.",
+      "A Tamer you already played bonds with the companion it was using, at the level its blacksmith work had reached.",
+      "The Tamer walks its own path. It takes nothing from your other classes: no fame upgrades, no legend unlocks, no bestiary gold, and it never climbs as the Second Climber. Where they earn fame, it earns TOTEMS, and becoming a legend pays it totems instead of marks.",
+      "Totems are spent on the Ascension tab: on the Tamer (Wild Might, Wild Hide, Lore of the Wild, Wild Training), or on every OTHER class (the Wolf, Bear and Hawk Totems: damage, health and armor, experience and gold).",
+      "Other classes earn totems too, as a special reward of the Wild Reaches: every boss there pays half its fame again in totems.",
+      "A Tamer you already played starts with 2 totems for every floor of its best, to make up for the fame it no longer uses.",
+      "Breakthroughs: every class's own choices are now at least as good as Conqueror for the build they are written for (before, most were behind it, so Conqueror was the only real pick). Purer Arcana x1.7 (was x1.5); Stronger Venom, Deeper Wounds and Hotter Flame x1.6 (were x1.3); Heavier Club, Sharper Fangs, Heavier Paws, Wilder Storm, Bigger Boulders, Faster Hands, Heavier Bolts and Deeper Void x1.5 (were x1.4); Deeper Shadow, Heavier Disc and Louder Echoes x1.6 (were x1.5); Brighter Light x1.4 (was x1.2).",
+      "The class-wide breakthroughs are stronger too: Perfect Ambush, Deeper Bond, Old Grudges and Longer Crusade x2 (were x1.5), Red Mist is now Rage x2 and attack x1.3, and Hungrier Souls attack and health x1.4 (were x1.3)."
+    ]
+  },
+  {
     version: "20261017b",
     title: "A smaller This run box on a phone",
     changes: [

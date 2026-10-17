@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261017b">
+  <link rel="stylesheet" href="style.css?v=20261017c">
 </head>
 <body data-tab="tower">
 
@@ -202,7 +202,7 @@
           <!-- Each fighter is three boxes inside each other, so three movements can
                play at once: "mover" lunges, "bobber" sways gently, "icon" shakes when hit -->
           <div id="player-side" class="fighter">
-            <div id="player-mover" class="mover"><div class="bobber"><div id="player-icon" class="icon"></div></div></div>
+            <div id="player-mover" class="mover"><div class="bobber"><div id="player-icon" class="icon"></div><div id="pet-icon" class="pet-icon" hidden></div></div></div>
             <div class="shadow"></div>
             <p id="player-name" class="fighter-name"></p>
             <div class="bar"><div id="player-hp-trail" class="trail"></div><div id="player-hp-bar" class="fill player"></div></div>
@@ -470,14 +470,24 @@
       <!-- Town -->
       <div class="page" id="page-town">
         <div class="card">
-          <h2>Blacksmith</h2>
-          <p class="note">Improves your equipment for gold from your bank, one step at a time. After +9 it becomes the next tier. You keep it when you fall, but not when you ascend.</p>
+          <!-- For a class that fights with pets (the Beast Tamer) this card is its Pets:
+               the title and the note change, and the one row trains a pet (showBlacksmith) -->
+          <h2 id="smith-title">Blacksmith</h2>
+          <p id="smith-note" class="note">Improves your equipment for gold from your bank, one step at a time. After +9 it becomes the next tier. You keep it when you fall, but not when you ascend.</p>
 
           <!-- Hidden for a class with only one kind of weapon. The buttons are made by the game (game/). -->
           <div id="weapon-picker" class="picker" hidden>
-            <p class="row-title">Fight with</p>
+            <p id="weapon-picker-title" class="row-title">Fight with</p>
             <div id="weapon-buttons" class="choices"></div>
             <p id="weapon-picker-note" class="note"></p>
+          </div>
+
+          <!-- A tamer's hunt: the monsters of this tower it can catch, one of them tracked.
+               The tiles are made by the game (showHunt in game/page-show.js). -->
+          <div id="hunt-picker" class="picker" hidden>
+            <p class="row-title">Hunt</p>
+            <div id="hunt-buttons" class="choices pet-grid"></div>
+            <p id="hunt-note" class="note"></p>
           </div>
 
           <!-- Only shown with the Second Weapon legend unlock. The buttons are made by the game (game/). -->
@@ -498,6 +508,7 @@
           <div id="forge"></div>
           <div class="choices">
             <button id="forge-all" onclick="upgradeAllGear()">Buy all I can afford</button>
+            <button id="pet-merge" onclick="mergePet(petInPicker())" hidden>Merge</button>
           </div>
         </div>
 
@@ -557,9 +568,15 @@
         <div class="card">
           <div class="card-head">
             <h2>Ascension</h2>
-            <p>Fame <strong id="fame-owned" class="big-number">0</strong></p>
+            <p><span id="purse-name">Fame</span> <strong id="fame-owned" class="big-number">0</strong></p>
           </div>
-          <p class="note">
+          <!-- (said in place of the note under it while the Beast Tamer is played) -->
+          <p id="own-path-note" class="note" hidden>
+            The Beast Tamer walks its own path. Where other classes earn fame, it earns totems: 1 for
+            every floor the first time since ascending, and more from every boss from floor 15 up.
+            Fame, legend unlocks and the bestiary do nothing for it. See Totems below.
+          </p>
+          <p id="fame-note" class="note">
             Every floor pays 1 fame the first time you reach it. Ascending starts this class again
             from level 1, and makes every floor pay again. From floor 15 up, every boss also pays fame each time you beat it, and deeper bosses pay more. Fame is shared by all your classes:
             whichever class earns it, what it buys makes every one of them stronger.
@@ -588,11 +605,23 @@
           <table id="reset-table" class="reset-table"></table>
         </div>
 
-        <div class="card">
+        <div id="fame-card" class="card">
           <h2>Fame upgrades</h2>
           <p class="note">Kept forever, and shared by all your classes. Every one is a straight multiplier, and every level multiplies again. They open up as you ascend. A class gets the full power of as many levels as it has ascended itself (this one: <strong id="catch-up-count">0</strong>); levels beyond that work at <span id="catch-up-share">25%</span> until it catches up.</p>
           <!-- The rows are made by the game (game/) from the fameUpgrades list in data.js -->
           <div id="fame-upgrades"></div>
+        </div>
+
+        <!-- TOTEMS: the Beast Tamer's own path (game/bonuses.js). Shown once the Tamer is
+             open, to every class: what the Tamer earns can be spent on the others. -->
+        <div id="totem-card" class="card" hidden>
+          <div class="card-head">
+            <h2>Totems</h2>
+            <p>Totems <strong id="totems-owned" class="big-number">0</strong></p>
+          </div>
+          <p class="note">The Beast Tamer earns totems where other classes earn fame, and more when it becomes a legend. Other classes earn a few from the bosses of the Wild Reaches. Spend them on the Tamer, or on every other class. Kept forever, and every level multiplies again.</p>
+          <!-- The rows are made by the game (game/) from the totemUpgrades list in data.js -->
+          <div id="totem-upgrades"></div>
         </div>
       </div>
 
@@ -623,7 +652,7 @@
 
         <div class="card">
           <h2>What marks open</h2>
-          <p class="note">Kept forever, for every class. None of these is a multiplier: each one opens something new.</p>
+          <p class="note">Kept forever, for every class but the Beast Tamer, which walks its own path. None of these is a multiplier: each one opens something new.</p>
           <!-- The rows are made by the game (game/) from the legendUnlocks list in data.js -->
           <div id="legend-unlocks"></div>
         </div>
@@ -811,38 +840,39 @@
          3. the file version.txt
        The ?v= makes browsers fetch the new files instead of old remembered ones, and
        version.txt is how a game left open finds out it is out of date (see game/start.js). -->
-  <script>const gameVersion = "20261017b";</script>
-  <script src="data.js?v=20261017b"></script>
-  <script src="updates.js?v=20261017b"></script>
-  <script src="towers.js?v=20261017b"></script>
-  <script src="classes/barbarian.js?v=20261017b"></script>
-  <script src="classes/warden.js?v=20261017b"></script>
-  <script src="classes/ranger.js?v=20261017b"></script>
-  <script src="classes/assassin.js?v=20261017b"></script>
-  <script src="classes/warlock.js?v=20261017b"></script>
-  <script src="classes/elementalist.js?v=20261017b"></script>
-  <script src="classes/zealot.js?v=20261017b"></script>
-  <script src="classes/beasttamer.js?v=20261017b"></script>
+  <script>const gameVersion = "20261017c";</script>
+  <script src="data.js?v=20261017c"></script>
+  <script src="updates.js?v=20261017c"></script>
+  <script src="towers.js?v=20261017c"></script>
+  <script src="classes/barbarian.js?v=20261017c"></script>
+  <script src="classes/warden.js?v=20261017c"></script>
+  <script src="classes/ranger.js?v=20261017c"></script>
+  <script src="classes/assassin.js?v=20261017c"></script>
+  <script src="classes/warlock.js?v=20261017c"></script>
+  <script src="classes/elementalist.js?v=20261017c"></script>
+  <script src="classes/zealot.js?v=20261017c"></script>
+  <script src="classes/beasttamer.js?v=20261017c"></script>
+  <script src="classes/pets.js?v=20261017c"></script>
   <!-- The game's rules, in this order (start.js last) -->
-  <script src="game/state.js?v=20261017b"></script>
-  <script src="game/bonuses.js?v=20261017b"></script>
-  <script src="game/legend.js?v=20261017b"></script>
-  <script src="game/weekly.js?v=20261017b"></script>
-  <script src="game/equipment.js?v=20261017b"></script>
-  <script src="game/abilities.js?v=20261017b"></script>
-  <script src="game/bosses.js?v=20261017b"></script>
-  <script src="game/summary.js?v=20261017b"></script>
-  <script src="game/companion.js?v=20261017b"></script>
-  <script src="game/skills.js?v=20261017b"></script>
-  <script src="game/save.js?v=20261017b"></script>
-  <script src="game/page-build.js?v=20261017b"></script>
-  <script src="game/page-show.js?v=20261017b"></script>
-  <script src="game/fights.js?v=20261017b"></script>
-  <script src="game/tidy.js?v=20261017b"></script>
-  <script src="game/feel.js?v=20261017b"></script>
-  <script src="game/tips.js?v=20261017b"></script>
-  <script src="game/start.js?v=20261017b"></script>
-  <script src="cloud.js?v=20261017b"></script>
-  <script src="friends.js?v=20261017b"></script>
+  <script src="game/state.js?v=20261017c"></script>
+  <script src="game/bonuses.js?v=20261017c"></script>
+  <script src="game/legend.js?v=20261017c"></script>
+  <script src="game/weekly.js?v=20261017c"></script>
+  <script src="game/equipment.js?v=20261017c"></script>
+  <script src="game/abilities.js?v=20261017c"></script>
+  <script src="game/bosses.js?v=20261017c"></script>
+  <script src="game/summary.js?v=20261017c"></script>
+  <script src="game/companion.js?v=20261017c"></script>
+  <script src="game/skills.js?v=20261017c"></script>
+  <script src="game/save.js?v=20261017c"></script>
+  <script src="game/page-build.js?v=20261017c"></script>
+  <script src="game/page-show.js?v=20261017c"></script>
+  <script src="game/fights.js?v=20261017c"></script>
+  <script src="game/tidy.js?v=20261017c"></script>
+  <script src="game/feel.js?v=20261017c"></script>
+  <script src="game/tips.js?v=20261017c"></script>
+  <script src="game/start.js?v=20261017c"></script>
+  <script src="cloud.js?v=20261017c"></script>
+  <script src="friends.js?v=20261017c"></script>
 </body>
 </html>

@@ -27,7 +27,7 @@ PRE=""
 #
 #  To change the limit for one command:  LLOEGRYS_MAX_EDGE=2 bash tools/run.sh ...
 # ---------------------------------------------------------------------
-MAX_EDGE="${LLOEGRYS_MAX_EDGE:-3}"
+MAX_EDGE="${LLOEGRYS_MAX_EDGE:-2}"
 SLOTS="${TMPDIR:-/tmp}/lloegrys-edge-slots"
 SLOT=""
 

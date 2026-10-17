@@ -42,8 +42,12 @@ function randomGearType(className) {
   return types[Math.floor(Math.random() * types.length)];
 }
 
-// How many steps the blacksmith has improved a slot ("weapon" or "armor")
+// How many steps the blacksmith has improved a slot ("weapon" or "armor").
+// For a class that fights with pets, both are the bonded pet's own step (see "Pets").
 function forgeLevel(slot) {
+  if (fightsWithPets()) {
+    return petOf(pet).step;
+  }
   if (forgeLevels[slot] === undefined) {
     return 0;
   }
@@ -79,6 +83,11 @@ function forgeCostOf(slot) {
 }
 
 function upgradeGear(slot) {
+  // (for a class that fights with pets, the one row's button trains the pet picked)
+  if (fightsWithPets()) {
+    trainPet(petInPicker());
+    return;
+  }
   if (bank >= forgeCostOf(slot)) {
     let tierBefore = Math.floor(forgeLevel(slot) / forgeStepsPerTier);
     bank = bank - forgeCostOf(slot);
@@ -103,6 +112,10 @@ function announceNewTier(slot, tierBefore) {
 // The "Buy all I can afford" button: keeps buying whichever step is cheaper
 // until the bank cannot pay for either
 function upgradeAllGear() {
+  if (fightsWithPets()) {
+    trainPet(petInPicker());
+    return;
+  }
   let bought = 0;
   let weaponTier = Math.floor(forgeLevel("weapon") / forgeStepsPerTier);
   let armorTier = Math.floor(forgeLevel("armor") / forgeStepsPerTier);
@@ -126,12 +139,237 @@ function upgradeAllGear() {
   }
 }
 
+// ----- Pets -----
+// A class with "fightsWithPets: true" in its file (the Beast Tamer) never visits the
+// blacksmith. Each of its pets grows by itself instead:
+//   - every kill gives the BONDED pet experience, as much as the gold the monster drops
+//     times petExperienceShare (data.js), and the class Essence (petEssenceShare);
+//   - Essence trains ANY pet, so the ones waiting in the den need not fall behind.
+// A pet's level is a step, counted like the blacksmith's: its tiers are the class's
+// gearTiers (Young, Grown, Seasoned...), its power is forgePower, and everything that
+// multiplies "gear" makes a pet stronger too. Bonding with another pet (the weapon
+// picker) happens after the next fall, as picking another weapon does.
+function fightsWithPets() {
+  return currentClass().fightsWithPets === true;
+}
+
+// A pet's record, made the first time it is asked for
+function petOf(kind) {
+  if (pets[kind] === undefined) {
+    pets[kind] = { step: 0, xp: 0 };
+  }
+  return pets[kind];
+}
+
+// The experience a pet needs for its next step: what the blacksmith would ask in gold
+function petStepCost(kind) {
+  return Math.round(forgeCost * Math.pow(forgeCostGrowth, petOf(kind).step));
+}
+
+// Gives a pet experience, and takes it up as many steps as that pays for
+function feedPet(kind, amount) {
+  let pet = petOf(kind);
+  let stepBefore = pet.step;
+  pet.xp = pet.xp + amount;
+  while (pet.xp >= petStepCost(kind)) {
+    pet.xp = pet.xp - petStepCost(kind);
+    pet.step = pet.step + 1;
+  }
+  if (pet.step === stepBefore) {
+    return;
+  }
+  recalcStats();
+  if (Math.floor(pet.step / forgeStepsPerTier) > Math.floor(stepBefore / forgeStepsPerTier)) {
+    announce("banner", petName(kind), "Your " + petKits[kind].name + " grows: " + gearStat("weapon", pet.step) + ".");
+  }
+}
+
+// What a kill pays a class that fights with pets (called from victory in game/fights.js)
+function rewardPets(gold) {
+  feedPet(pet, gold * petExperienceShare);
+  essence = essence + gold * petEssenceShare * (1 + totalBonus("essenceGain"));
+}
+
+// The Essence that takes a pet to its next step
+function petTrainCost(kind) {
+  return Math.ceil(petStepCost(kind) - petOf(kind).xp);
+}
+
+// The Train button: as many steps as the Essence pays for
+function trainPet(kind) {
+  let steps = 0;
+  while (essence >= petTrainCost(kind)) {
+    let cost = petTrainCost(kind);
+    essence = essence - cost;
+    feedPet(kind, cost);
+    steps = steps + 1;
+  }
+  if (steps > 0) {
+    say("You train your " + petKits[kind].name + ": " + petName(kind) + ".");
+    updateScreen();
+  }
+}
+
+// ----- Catching pets (see "Catching pets" in data.js) -----
+// The pets a tamer has: the starters, and every kind it has caught
+function ownedPets() {
+  return Object.keys(petKits).filter(function (kind) {
+    return petKits[kind].monster === undefined || pets[kind] !== undefined;
+  });
+}
+
+// The pet a monster of this name would be, or "" if it has no kit yet
+function petFromMonster(name) {
+  for (let kind in petKits) {
+    if (petKits[kind].monster === name) {
+      return kind;
+    }
+  }
+  return "";
+}
+
+// How a catch's rarity is rolled: a rare monster never comes out below Rare
+function rollRarity(fromRare) {
+  let lowest = fromRare ? 2 : 0;
+  let roll = Math.random() * petRarities.slice(lowest).reduce(function (sum, r) { return sum + r.chance; }, 0);
+  let last = lowest;
+  for (let i = lowest; i < petRarities.length; i++) {
+    if (petRarities[i].chance > 0) {
+      last = i;
+    }
+    roll = roll - petRarities[i].chance;
+    if (roll < 0 && petRarities[i].chance > 0) {
+      return i;
+    }
+  }
+  return last;
+}
+
+// What a pet's rarity multiplies its attack and health by
+function petRarityPower() {
+  if (!fightsWithPets()) {
+    return 1;
+  }
+  return petRarities[petOf(pet).rarity || 0].power;
+}
+
+// The names of the pets caught since the page was opened, newest last (for the report of
+// time away: game/start.js). Not saved.
+let petsCaught = [];
+
+// The chance an ordinary monster of this kind joins a tamer that beats it: more for a kind
+// the bestiary knows well, and with the passives that catch more ("petCatch")
+function petCatchChanceOf(kind) {
+  let owned = pets[petFromMonster(kind)] !== undefined;
+  return (owned ? petCatchAgain : petCatchChance) * (1 + totalBonus("petCatch")) * (1 + petBestiaryCatch * bestiaryRank(kind));
+}
+
+// The copies that merge a pet into its next rarity: more for each rarity it has
+function petCopiesToMerge(kind) {
+  return petMergeCopies * ((pets[kind].rarity || 0) + 1);
+}
+
+// The chance the monster just beaten joins: an ordinary one as petCatchChanceOf says (a
+// rare one petRareCatch times likelier), a boss only once the bestiary knows it
+function petCatchNow(kind) {
+  if (bondTrial && encounterType === "boss") {
+    return 1;
+  }
+  if (petKits[kind].boss === true) {
+    return encounterType === "boss" && bestiaryRank(monsterKind) >= petBossKnown ? petBossCatch * (1 + totalBonus("petCatch")) : 0;
+  }
+  if (encounterType !== "monster") {
+    return 0;
+  }
+  return petCatchChanceOf(monsterKind) * (monsterIsRare ? petRareCatch : 1);
+}
+
+// The Merge button: enough copies of a pet make it one rarity better
+function mergePet(kind) {
+  let record = pets[kind];
+  if (record === undefined || (record.copies || 0) < petCopiesToMerge(kind) || (record.rarity || 0) >= petRarities.length - 1) {
+    return;
+  }
+  record.copies = record.copies - petCopiesToMerge(kind);
+  record.rarity = (record.rarity || 0) + 1;
+  recalcStats();
+  announce("banner", petRarities[record.rarity].name + " " + petKits[kind].name, "Merged: stronger, and its levels are kept.");
+  updateScreen();
+}
+
+// Will this boss fight a Bond Trial? Only for a tamer hunting it, who has not tamed it
+// yet, once the bestiary knows it well enough
+function bondTrialReady(bossName) {
+  let kind = petFromMonster(bossName);
+  return fightsWithPets() && trackedPet === bossName && kind !== "" && pets[kind] === undefined && bestiaryRank(bossName) >= petTrialKnown;
+}
+
+// Hunts a kind of monster, or stops hunting it if it was already hunted
+function trackPet(monsterName) {
+  trackedPet = trackedPet === monsterName ? "" : monsterName;
+  updateScreen();
+}
+
+// Runs after every win of a tamer: the monster may join it
+function tryCatch() {
+  let kind = petFromMonster(monsterKind);
+  if (kind === "" || !chance(petCatchNow(kind))) {
+    return;
+  }
+  let rarity = rollRarity(monsterIsRare || petKits[kind].boss === true);
+  let name = petRarities[rarity].name + " " + petKits[kind].name;
+
+  // A kind it has already: the better rarity, or a copy to merge (Essence for a Mythic's)
+  if (pets[kind] !== undefined) {
+    if (rarity > (pets[kind].rarity || 0)) {
+      pets[kind].rarity = rarity;
+      petsCaught.push(name);
+      recalcStats();
+      announce("banner", "Caught: " + name, "Your " + petKits[kind].name + " is " + petRarities[rarity].name + " now: stronger, and its levels are kept.");
+    } else if ((pets[kind].rarity || 0) < petRarities.length - 1) {
+      pets[kind].copies = (pets[kind].copies || 0) + 1;
+      say("You catch a " + name + ": a copy of the one you have (" + pets[kind].copies + " of " + petCopiesToMerge(kind) + " to merge it into the next rarity).");
+    } else {
+      let paid = Math.round(petStepCost(kind) * petReleaseShare);
+      essence = essence + paid;
+      say("You catch a " + name + ", and let it go: yours is Mythic already. It leaves " + big(paid) + " Essence.");
+    }
+    return;
+  }
+
+  pets[kind] = { step: Math.floor(petOf(pet).step * petCatchStep), xp: 0, rarity: rarity };
+  petsCaught.push(name);
+  // (the hunt for it is over)
+  if (trackedPet === monsterKind) {
+    trackedPet = "";
+  }
+  announce("banner", "Caught: " + name, "A new pet. Pick it under Bond with, on the Town tab, to fight beside it after your next fall.");
+}
+
+// For example "Seasoned Wolf Pack +3"
+function petName(kind) {
+  let step = petOf(kind).step;
+  let tier = Math.floor(step / forgeStepsPerTier);
+  let plus = step - tier * forgeStepsPerTier;
+  let tierName = currentClass().gearTiers[Math.min(currentClass().gearTiers.length - 1, tier)];
+  return tierName + " " + petKits[kind].name + (plus > 0 ? " +" + plus : "");
+}
+
+// Ascending (and becoming a legend) costs each pet half its steps. What the climb was
+// worth is not all lost, and the den's training is never thrown away.
+function petsStartOver() {
+  for (let kind in pets) {
+    pets[kind].step = Math.floor(pets[kind].step / 2);
+    pets[kind].xp = 0;
+  }
+}
+
 // For example "Bronze Axe", "Iron Ember Shield +7" or "Steel Armor +2".
 // "step" is how far the blacksmith has taken it.
 function gearName(slot, step) {
   let name = plainLabel();
   if (slot === specialSlot()) {
-    name = currentClass().gearTypes[weapon];
+    name = fightsWithPets() ? petKits[pet].name : currentClass().gearTypes[weapon];
 
     // A named weapon takes the place of the kind's name, and keeps the blacksmith's work
     if (wieldedTrophy() !== null) {
@@ -250,7 +488,12 @@ function wieldNamedWeapon(id) {
 }
 
 // Picks the kind of weapon to fight with. It is taken up at the start of the next run.
+// (a tamer picks a pet here instead: "type" is then the pet, and the weapon its path)
 function chooseWeapon(type) {
+  if (fightsWithPets()) {
+    nextPet = type;
+    type = petPaths[petKits[type].path].build;
+  }
   nextWeapon = type;
   updateScreen();
 }
@@ -259,6 +502,12 @@ function chooseWeapon(type) {
 function startRunGear() {
   if (currentClass().gearTypes[nextWeapon] === undefined) {
     nextWeapon = weapon;
+  }
+  // (a tamer bonds with the pet it picked)
+  if (fightsWithPets() && petKits[nextPet] !== undefined && nextPet !== pet) {
+    pet = nextPet;
+    weapon = nextWeapon;
+    say("You bond with your " + petName(pet) + ".");
   }
   if (nextWeapon !== weapon) {
     weapon = nextWeapon;

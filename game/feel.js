@@ -381,7 +381,24 @@ function showBanner(text, kind) {
 // class has one (artWith, as the Beast Tamer has), or else the class's own
 function heroArt() {
   let withKind = currentClass().artWith || {};
+  // (a tamer with a caught pet has no picture beside it yet: the tamer's own, then)
+  if (currentClass().fightsWithPets === true && petKits[pet] !== undefined && petKits[pet].monster !== undefined) {
+    return currentClass().art;
+  }
   return withKind[kindInHand()] || currentClass().art;
+}
+
+// A tamer's caught pet stands beside it in the fight, smaller and facing the enemy (a
+// starter's spirit is in the tamer's own picture already: see artWith)
+function drawPetBeside() {
+  let box = document.getElementById("pet-icon");
+  let art = fightsWithPets() && petKits[pet] !== undefined && petKits[pet].monster !== undefined ? petArt(pet) : "";
+  box.hidden = art === "";
+  box.className = "pet-icon" + (art === "" ? "" : " rarity-" + petRarityOf(pet));
+  if (box.dataset.art !== art) {
+    box.dataset.art = art;
+    box.innerHTML = art === "" ? "" : '<img src="' + art + '" alt="">';
+  }
 }
 
 // Shows a fighter's picture: its pixel art if it has some, otherwise its emoji.
