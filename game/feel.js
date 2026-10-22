@@ -91,7 +91,8 @@ function announce(size, title, text, choices) {
     }
     return;
   }
-  if (catchingUp || document.hidden || !animationsOn) {
+  // (chatOnly: friends.js, the chat covers the fight)
+  if (catchingUp || document.hidden || !animationsOn || chatOnly) {
     return;
   }
   if (size === "toast") {
@@ -246,6 +247,13 @@ function checkTabUnlocks() {
 // name in the browser, and a save code does not carry them.
 const settingsName = "lloegrys-idle-settings";
 let animationsOn = true;
+
+// CHAT ONLY (the button on the chat, setChatOnly in friends.js): the open chat covers
+// the whole page and the fight underneath stops animating, so the browser window can
+// be made small and kept in a corner of the screen. The game goes on playing as usual.
+// Not saved: a reload shows the game. (It is here, not in friends.js, because this
+// file is loaded first and its animations ask about it from the start.)
+let chatOnly = false;
 let openTab = "tower";      // the tab that was open last time
 let seenVersion = "";       // the newest version whose Updates entry this device has opened
 let watchFast = false;      // double speed while the tab is on screen (see "Watching" in data.js)
@@ -433,8 +441,9 @@ function drawPicture(id, icon, art) {
 }
 
 function animatedStep() {
-  // Nothing to animate if nobody is looking, or animations are switched off
-  if (document.hidden || !animationsOn) {
+  // Nothing to animate if nobody is looking, animations are switched off, or the
+  // chat covers the fight (Chat only, in friends.js)
+  if (document.hidden || !animationsOn || chatOnly) {
     step();
     return;
   }

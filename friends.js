@@ -39,6 +39,7 @@ let chatWith = "";
 let chatLines = [];
 let chatAfter = 0;
 let chatNumber = 0;         // goes up each time a chat is opened or closed (see askFriends)
+// (chatOnly, true while the chat covers the page, is kept in game/feel.js)
 
 let friendsBusy = false;    // an ask is on its way
 let friendsAgain = false;   // something changed while it was: ask again when it is back
@@ -191,6 +192,8 @@ function openChat(name) {
   chatNumber = chatNumber + 1;
   chatLines = [];
   chatAfter = 0;
+  chatAtBottom = true;
+  dropPicture();
   document.getElementById("chat-message").textContent = "";
   document.getElementById("chat-lines").replaceChildren();
   showFriends();
@@ -200,11 +203,26 @@ function openChat(name) {
 }
 
 function closeChat() {
+  chatOnly = false;
+  dropPicture();
   chatWith = "";
   chatNumber = chatNumber + 1;
   chatLines = [];
   chatAfter = 0;
   showFriends();
+}
+
+// The "Chat only" button, and "Back to the game" while it is on
+function setChatOnly(on) {
+  chatOnly = on;
+  let card = document.getElementById("chat-card");
+  if (on && card.classList.contains("folded")) {
+    foldCard(card, false);
+  }
+  showFriends();
+  let list = document.getElementById("chat-lines");
+  list.scrollTop = list.scrollHeight;
+  document.getElementById("chat-box").focus();
 }
 
 async function sendChat() {
@@ -219,11 +237,229 @@ async function sendChat() {
   }
 }
 
+// ----- Pictures -----
+// A screenshot pasted into the chat (or picked with the Picture button) is made small
+// here, shown above the box, and only sent when "Send picture" is pressed. The server
+// keeps it 7 days and takes at most 10 a day from each player (cloud-setup.sql).
+const pictureLetters = 82000;                // the most a picture may be once small (about 60 KB; the server takes 100,000)
+const pictureSides = [1280, 1000, 800, 640, 480];  // the longest side to try, biggest first
+const pictureQualities = [0.8, 0.65, 0.5];   // and at each size, the qualities to try
+
+let pictureToSend = "";     // the picture waiting to be sent ("" for none)
+let pictureCache = {};      // picture number -> picture (null if it has gone), fetched once per page
+
+// GIF LINKS. A message that is just one link to a GIF on one of these sites shows as
+// the GIF, which comes straight from that site: nothing is kept on our server.
+// Only these sites, so that a link cannot be used to see who looked at it.
+// To add a site: add the name of the computer its pictures come from.
+const gifSites = [
+  /^media\d*\.giphy\.com$/,
+  /^i\.giphy\.com$/,
+  /^media\d*\.tenor\.com$/,
+  /^c\.tenor\.com$/,
+  /^i\.imgur\.com$/
+];
+
+// The address of the GIF a message links to, or "" if it is not a GIF link
+function gifAddress(text) {
+  let url;
+  try {
+    url = new URL(text.trim());
+  } catch (error) {
+    return "";
+  }
+  if (url.protocol !== "https:" || /\s/.test(text.trim())) {
+    return "";
+  }
+  // A Giphy page (giphy.com/gifs/some-words-ID): its GIF has the ID that ends it
+  if (url.hostname === "giphy.com" && url.pathname.startsWith("/gifs/")) {
+    let id = url.pathname.split("/")[2].split("-").pop();
+    return /^[A-Za-z0-9]+$/.test(id) ? "https://media.giphy.com/media/" + id + "/giphy.gif" : "";
+  }
+  if (gifSites.some(function (site) { return site.test(url.hostname); })) {
+    return url.href;
+  }
+  return "";
+}
+
+// Makes a picture small enough to send: the biggest size and best quality that fit.
+// Gives back a "data:image/..." address, or "" if it cannot be made small enough.
+async function makePictureSmall(file) {
+  let bitmap = await createImageBitmap(file);
+  let canvas = document.createElement("canvas");
+  for (let side of pictureSides) {
+    let scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height));
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    let pen = canvas.getContext("2d");
+    // (a see-through picture gets the chat's own dark colour behind it)
+    pen.fillStyle = "#110f0d";
+    pen.fillRect(0, 0, canvas.width, canvas.height);
+    pen.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    for (let quality of pictureQualities) {
+      // WebP is smaller; a browser that cannot make it gives back a PNG, so use JPEG there
+      let data = canvas.toDataURL("image/webp", quality);
+      if (!data.startsWith("data:image/webp")) {
+        data = canvas.toDataURL("image/jpeg", quality);
+      }
+      if (data.length <= pictureLetters) {
+        return data;
+      }
+    }
+  }
+  return "";
+}
+
+async function takePicture(file) {
+  let message = document.getElementById("chat-message");
+  if (file === undefined || !file.type.startsWith("image/")) {
+    message.textContent = "Only pictures can be sent.";
+    return;
+  }
+  message.textContent = "";
+  try {
+    pictureToSend = await makePictureSmall(file);
+  } catch (error) {
+    pictureToSend = "";
+  }
+  if (pictureToSend === "") {
+    message.textContent = "That picture could not be read.";
+  }
+  showPictureToSend();
+}
+
+function dropPicture() {
+  pictureToSend = "";
+  showPictureToSend();
+}
+
+function showPictureToSend() {
+  document.getElementById("chat-picture").hidden = pictureToSend === "";
+  document.getElementById("chat-picture-img").src = pictureToSend;
+  document.getElementById("chat-picture-send").disabled = false;
+}
+
+async function sendPicture() {
+  if (pictureToSend === "" || chatWith === "") {
+    return;
+  }
+  let message = document.getElementById("chat-message");
+  let button = document.getElementById("chat-picture-send");
+  button.disabled = true;
+  message.textContent = "Sending the picture...";
+  try {
+    await cloudCall("send_picture", { p_username: cloudUser, p_token: cloudToken, p_name: chatWith, p_data: pictureToSend });
+    message.textContent = "";
+    dropPicture();
+    askFriends();
+  } catch (error) {
+    // (a server that has not been given pictures yet must not switch friends off,
+    // which is what friendsReason does when a function is missing)
+    message.textContent = error.message.includes("Could not find the function")
+      ? "Pictures are not switched on on the server yet."
+      : friendsReason(error);
+    button.disabled = false;
+  }
+}
+
+// Whether the chat is scrolled to its newest message, so that new messages and
+// pictures that finish loading keep it there. Only the player's scrolling changes
+// it (a picture growing does not scroll the list).
+let chatAtBottom = true;
+document.getElementById("chat-lines").addEventListener("scroll", function () {
+  let list = document.getElementById("chat-lines");
+  chatAtBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
+});
+
+// Pasting a picture anywhere in the chat
+document.getElementById("chat-card").addEventListener("paste", function (event) {
+  for (let item of event.clipboardData.items) {
+    if (item.kind === "file" && item.type.startsWith("image/")) {
+      event.preventDefault();
+      takePicture(item.getAsFile());
+      return;
+    }
+  }
+});
+
+// A line of grey words in place of a picture
+function pictureNote(words) {
+  let note = document.createElement("span");
+  note.className = "chat-text chat-gone";
+  note.textContent = words;
+  return note;
+}
+
+// A picture in the chat. address is where it is (a GIF link), or "" to fetch picture
+// number "number" from the server. Pressing it shows it at full size, and back.
+function chatPicture(address, number, words) {
+  let image = document.createElement("img");
+  image.className = "chat-picture";
+  image.alt = "A picture";
+  image.referrerPolicy = "no-referrer";
+  image.onclick = function () {
+    image.classList.toggle("big");
+  };
+  // (a picture appears after the words around it: keep a chat that was at the bottom there)
+  image.onload = function () {
+    if (chatAtBottom) {
+      let list = document.getElementById("chat-lines");
+      list.scrollTop = list.scrollHeight;
+    }
+  };
+  image.onerror = function () {
+    image.replaceWith(pictureNote(words));
+  };
+
+  if (address !== "") {
+    image.src = address;
+  } else {
+    loadPicture(number, image);
+  }
+  return image;
+}
+
+async function loadPicture(number, image) {
+  if (pictureCache[number] === undefined) {
+    try {
+      let result = await cloudCall("get_picture", { p_username: cloudUser, p_token: cloudToken, p_id: number });
+      pictureCache[number] = result.data;
+    } catch (error) {
+      image.replaceWith(pictureNote("The picture could not be loaded."));
+      return;
+    }
+  }
+  if (pictureCache[number] === null) {
+    image.replaceWith(pictureNote("A picture (pictures are kept for 7 days)"));
+  } else {
+    image.src = pictureCache[number];
+  }
+}
+
+// What a message shows: its words, a picture, or a GIF from its link
+function messageContent(message) {
+  if (message.picture !== undefined && message.picture !== null) {
+    return chatPicture("", message.picture, "The picture could not be shown.");
+  }
+  // (a picture's message has no words, and once the picture has gone, no number either)
+  if (message.body === "") {
+    return pictureNote("A picture (pictures are kept for 7 days)");
+  }
+  let gif = gifAddress(message.body);
+  if (gif !== "") {
+    return chatPicture(gif, null, message.body);
+  }
+  let text = document.createElement("span");
+  text.className = "chat-text";
+  text.textContent = message.body;
+  return text;
+}
+
 // ----- The chat -----
 // Adds the messages the server sent that are not on screen yet
 function addChatLines(messages) {
   let list = document.getElementById("chat-lines");
-  let atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
+  let atBottom = chatAtBottom;
 
   for (let message of messages) {
     if (message.id <= chatAfter) {
@@ -237,10 +473,7 @@ function addChatLines(messages) {
     let who = document.createElement("span");
     who.className = "chat-who";
     who.textContent = (message.mine ? "You" : chatWith) + ", " + new Date(message.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    let text = document.createElement("span");
-    text.className = "chat-text";
-    text.textContent = message.body;
-    line.append(who, text);
+    line.append(who, messageContent(message));
     list.append(line);
   }
 
@@ -388,6 +621,11 @@ function showFriends() {
   }
   document.getElementById("chat-card").hidden = chatWith === "" || off !== "";
   document.getElementById("chat-name").textContent = chatWith;
+
+  // Chat only ends with the chat (closed, logged out, or the friend removed)
+  chatOnly = chatOnly && !document.getElementById("chat-card").hidden;
+  document.body.classList.toggle("chat-only", chatOnly);
+  document.getElementById("chat-only-btn").textContent = chatOnly ? "Back to the game" : "Chat only";
   document.getElementById("chat-status").textContent = partner === undefined ? "" : seenText(partner.seen) + ".";
 
   // A dot on the tab for an unread message or a request to answer

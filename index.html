@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261017c">
+  <link rel="stylesheet" href="style.css?v=20261022a">
 </head>
 <body data-tab="tower">
 
@@ -664,12 +664,24 @@
           <h2>Chat with <span id="chat-name"></span></h2>
           <p id="chat-status" class="note"></p>
           <div id="chat-lines" class="chat-lines"></div>
+          <!-- A picture pasted or picked waits here until it is sent (friends.js) -->
+          <div id="chat-picture" class="chat-picture-ready" hidden>
+            <img id="chat-picture-img" alt="The picture to send">
+            <button id="chat-picture-send" onclick="sendPicture()">Send picture</button>
+            <button class="quiet" onclick="dropPicture()">Cancel</button>
+          </div>
           <form class="chat-send" onsubmit="sendChat(); return false;">
-            <input type="text" id="chat-box" maxlength="300" placeholder="Write a message" autocomplete="off">
+            <input type="text" id="chat-box" maxlength="300" placeholder="Write a message, or paste a picture" autocomplete="off">
             <button type="submit">Send</button>
+            <button type="button" class="quiet" onclick="document.getElementById('chat-file').click()">Picture</button>
+            <input type="file" id="chat-file" accept="image/*" hidden onchange="takePicture(this.files[0]); this.value = '';">
           </form>
+          <p id="chat-hint" class="note">Paste a screenshot (Ctrl+V), or a GIF's link from Giphy or Tenor (right-click the GIF, then "Copy image address"). Up to 10 pictures a day, kept for 7 days.</p>
           <p id="chat-message" class="note"></p>
-          <p><button class="quiet" onclick="closeChat()">Close the chat</button></p>
+          <p class="chat-buttons">
+            <button id="chat-only-btn" onclick="setChatOnly(!chatOnly)">Chat only</button>
+            <button class="quiet" onclick="closeChat()">Close the chat</button>
+          </p>
         </div>
 
         <div class="card">
@@ -840,39 +852,39 @@
          3. the file version.txt
        The ?v= makes browsers fetch the new files instead of old remembered ones, and
        version.txt is how a game left open finds out it is out of date (see game/start.js). -->
-  <script>const gameVersion = "20261017c";</script>
-  <script src="data.js?v=20261017c"></script>
-  <script src="updates.js?v=20261017c"></script>
-  <script src="towers.js?v=20261017c"></script>
-  <script src="classes/barbarian.js?v=20261017c"></script>
-  <script src="classes/warden.js?v=20261017c"></script>
-  <script src="classes/ranger.js?v=20261017c"></script>
-  <script src="classes/assassin.js?v=20261017c"></script>
-  <script src="classes/warlock.js?v=20261017c"></script>
-  <script src="classes/elementalist.js?v=20261017c"></script>
-  <script src="classes/zealot.js?v=20261017c"></script>
-  <script src="classes/beasttamer.js?v=20261017c"></script>
-  <script src="classes/pets.js?v=20261017c"></script>
+  <script>const gameVersion = "20261022a";</script>
+  <script src="data.js?v=20261022a"></script>
+  <script src="updates.js?v=20261022a"></script>
+  <script src="towers.js?v=20261022a"></script>
+  <script src="classes/barbarian.js?v=20261022a"></script>
+  <script src="classes/warden.js?v=20261022a"></script>
+  <script src="classes/ranger.js?v=20261022a"></script>
+  <script src="classes/assassin.js?v=20261022a"></script>
+  <script src="classes/warlock.js?v=20261022a"></script>
+  <script src="classes/elementalist.js?v=20261022a"></script>
+  <script src="classes/zealot.js?v=20261022a"></script>
+  <script src="classes/beasttamer.js?v=20261022a"></script>
+  <script src="classes/pets.js?v=20261022a"></script>
   <!-- The game's rules, in this order (start.js last) -->
-  <script src="game/state.js?v=20261017c"></script>
-  <script src="game/bonuses.js?v=20261017c"></script>
-  <script src="game/legend.js?v=20261017c"></script>
-  <script src="game/weekly.js?v=20261017c"></script>
-  <script src="game/equipment.js?v=20261017c"></script>
-  <script src="game/abilities.js?v=20261017c"></script>
-  <script src="game/bosses.js?v=20261017c"></script>
-  <script src="game/summary.js?v=20261017c"></script>
-  <script src="game/companion.js?v=20261017c"></script>
-  <script src="game/skills.js?v=20261017c"></script>
-  <script src="game/save.js?v=20261017c"></script>
-  <script src="game/page-build.js?v=20261017c"></script>
-  <script src="game/page-show.js?v=20261017c"></script>
-  <script src="game/fights.js?v=20261017c"></script>
-  <script src="game/tidy.js?v=20261017c"></script>
-  <script src="game/feel.js?v=20261017c"></script>
-  <script src="game/tips.js?v=20261017c"></script>
-  <script src="game/start.js?v=20261017c"></script>
-  <script src="cloud.js?v=20261017c"></script>
-  <script src="friends.js?v=20261017c"></script>
+  <script src="game/state.js?v=20261022a"></script>
+  <script src="game/bonuses.js?v=20261022a"></script>
+  <script src="game/legend.js?v=20261022a"></script>
+  <script src="game/weekly.js?v=20261022a"></script>
+  <script src="game/equipment.js?v=20261022a"></script>
+  <script src="game/abilities.js?v=20261022a"></script>
+  <script src="game/bosses.js?v=20261022a"></script>
+  <script src="game/summary.js?v=20261022a"></script>
+  <script src="game/companion.js?v=20261022a"></script>
+  <script src="game/skills.js?v=20261022a"></script>
+  <script src="game/save.js?v=20261022a"></script>
+  <script src="game/page-build.js?v=20261022a"></script>
+  <script src="game/page-show.js?v=20261022a"></script>
+  <script src="game/fights.js?v=20261022a"></script>
+  <script src="game/tidy.js?v=20261022a"></script>
+  <script src="game/feel.js?v=20261022a"></script>
+  <script src="game/tips.js?v=20261022a"></script>
+  <script src="game/start.js?v=20261022a"></script>
+  <script src="cloud.js?v=20261022a"></script>
+  <script src="friends.js?v=20261022a"></script>
 </body>
 </html>

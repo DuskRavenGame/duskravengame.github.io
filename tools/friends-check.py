@@ -107,6 +107,35 @@ for n in range(30):
 check("a flood of messages is stopped", error == "That is a lot of messages. Wait a moment.")
 check("opening a long chat gives the newest 50", len(poll(ann, chat=bobName)["messages"]) <= 50)
 
+# Pictures (Ann sends them: Bob has used up his messages for this minute)
+dot = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+sent, error = call("send_picture", **ann, p_name=bobName, p_data=dot)
+check("a picture is sent", error == "" and sent["id"] > 0)
+check("a stranger cannot send a picture", call("send_picture", **cat, p_name=bobName, p_data=dot)[1] == "You can only send pictures to your friends.")
+check("something that is not a picture is turned down", call("send_picture", **ann, p_name=bobName, p_data="data:text/html;base64,PGI+")[1] == "That is not a picture.")
+check("a picture with anything after its letters is turned down", call("send_picture", **ann, p_name=bobName, p_data=dot + "\"><b>")[1] == "That is not a picture.")
+check("a picture that is too big is turned down", call("send_picture", **ann, p_name=bobName, p_data="data:image/jpeg;base64," + "A" * 100000)[1] == "That picture is too big.")
+check("a picture counts as unread", friend(bob, annName)["unread"] >= 1)
+shown = [m for m in poll(bob, chat=annName, after=sent["id"] - 1)["messages"] if m["id"] == sent["id"]]
+check("the picture arrives as a message with no words and its number", len(shown) == 1 and shown[0]["body"] == "" and shown[0]["picture"] is not None and shown[0]["mine"] is False)
+picture = shown[0]["picture"]
+check("a word message has no picture number", all(m["picture"] is None for m in poll(bob, chat=annName)["messages"] if m["body"] != ""))
+check("the friend can see the picture", call("get_picture", **bob, p_id=picture)[0] == {"data": dot})
+check("the sender can see the picture", call("get_picture", **ann, p_id=picture)[0] == {"data": dot})
+check("a stranger cannot see the picture", call("get_picture", **cat, p_id=picture)[0] == {"data": None})
+check("a wrong token cannot see the picture", call("get_picture", p_username=bob["p_username"], p_token="nope", p_id=picture)[1] == "You are not logged in.")
+for n in range(9):
+    result, error = call("send_picture", **ann, p_name=bobName, p_data=dot)
+check("ten pictures a day can be sent", error == "")
+check("the eleventh is turned down", call("send_picture", **ann, p_name=bobName, p_data=dot)[1] == "You can send 10 pictures a day. Try again tomorrow.")
+with psycopg.connect(port=DB_PORT, user="postgres", dbname="postgres") as db:
+    db.execute("update pictures set sent_at = now() - interval '2 days' where sender = %s", [ann["p_username"]])
+    db.execute("update pictures set sent_at = now() - interval '8 days' where id = %s", [picture])
+check("a day later pictures can be sent again", call("send_picture", **ann, p_name=bobName, p_data=dot)[1] == "")
+gone = [m for m in poll(bob, chat=annName, after=sent["id"] - 1)["messages"] if m["id"] == sent["id"]]
+check("a picture older than 7 days is deleted, and its message says so (no words, no number)",
+      call("get_picture", **bob, p_id=picture)[0] == {"data": None} and len(gone) == 1 and gone[0]["body"] == "" and gone[0]["picture"] is None)
+
 # What a friend is playing
 check("a friend with no save shows no class", friend(ann, bobName)["class"] is None)
 save = {"playerClass": "warden", "classSaves": {"warden": {"level": 31, "bestFloor": 47}}}

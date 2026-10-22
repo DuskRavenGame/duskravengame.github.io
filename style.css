@@ -2368,10 +2368,106 @@ body.tip-showing {
   white-space: pre-wrap;
 }
 
+/* A picture or GIF in the chat: small until pressed */
+.chat-picture {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  margin-top: 4px;
+  cursor: zoom-in;
+}
+
+.chat-picture.big {
+  max-height: none;
+  cursor: zoom-out;
+}
+
+/* A picture that has gone, or could not be shown */
+.chat-gone {
+  color: var(--faded);
+  font-style: italic;
+}
+
+/* The picture waiting to be sent, above the box */
+.chat-picture-ready {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+
+.chat-picture-ready[hidden] {
+  display: none;
+}
+
+.chat-picture-ready img {
+  max-width: 160px;
+  max-height: 90px;
+  border: 1px solid var(--card-edge);
+}
+
+.chat-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 600px) {
   .friend-row {
     flex-wrap: wrap;
   }
+}
+
+/* Chat only (setChatOnly in friends.js): the chat fills the whole window, over
+   everything, so the window can be made small. The fight under it is not drawn. */
+body.chat-only {
+  overflow: hidden;
+}
+
+body.chat-only .play {
+  visibility: hidden;
+}
+
+/* (on a wide screen the Friends tab is a window with its own layer, under the
+   header: the whole window is lifted over everything, with the chat in it) */
+body.chat-only #page-friends {
+  z-index: 60;
+}
+
+body.chat-only #chat-card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--card);
+  overflow-y: auto;
+}
+
+body.chat-only #chat-card h2 {
+  margin: 0;
+}
+
+body.chat-only .chat-lines {
+  flex: 1 1 auto;
+  height: auto;
+  max-height: none;
+  min-height: 60px;
+}
+
+body.chat-only .chat-send {
+  margin: 8px 0 0;
+}
+
+body.chat-only #chat-message:empty,
+body.chat-only #chat-hint {
+  display: none;
 }
 
 /* ----- Waiting to be done: buttons in the fight (showWaiting in game/page-show.js) -----

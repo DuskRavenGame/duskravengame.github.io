@@ -206,6 +206,13 @@ grant execute on function public.clear_force(text, text) to anon;
 --     last_read      the newest message from other that owner has seen
 --   A table called "messages": one row for each chat message.
 --     Messages older than 30 days are deleted by themselves.
+--     picture        the number of the picture the message is (empty for words)
+--   A table called "pictures": one row for each picture pasted into a chat, kept
+--     as text (a "data:image/..." address, the way a browser can show it).
+--     Pictures older than 7 days are deleted by themselves, and the message then
+--     says the picture has gone. Each is at most 100,000 letters (about 73 KB),
+--     and a player may send at most 10 a day, so they can never fill the database:
+--     at most 5 MB for each player who sends them.
 --
 -- WHO CAN DO WHAT
 --   As above, the game can only use the functions. Messages can only be sent between
@@ -235,11 +242,25 @@ create table if not exists public.messages (
 create index if not exists messages_pair on public.messages (sender, receiver, id);
 create index if not exists messages_sent_at on public.messages (sent_at);
 
+create table if not exists public.pictures (
+  id bigserial primary key,
+  sender text not null references public.players (username) on delete cascade,
+  receiver text not null references public.players (username) on delete cascade,
+  data text not null,
+  sent_at timestamptz not null default now()
+);
+create index if not exists pictures_sender on public.pictures (sender, sent_at);
+create index if not exists pictures_sent_at on public.pictures (sent_at);
+alter table public.messages add column if not exists picture bigint references public.pictures (id) on delete set null;
+
 alter table public.friends enable row level security;
 alter table public.messages enable row level security;
+alter table public.pictures enable row level security;
 revoke all on table public.friends from anon, authenticated;
 revoke all on table public.messages from anon, authenticated;
 revoke all on sequence public.messages_id_seq from anon, authenticated;
+revoke all on table public.pictures from anon, authenticated;
+revoke all on sequence public.pictures_id_seq from anon, authenticated;
 
 
 -- Gives back the username of a player who is logged in, or stops with an error.
@@ -427,13 +448,71 @@ end;
 $$;
 
 
+-- Sends a picture to a friend: p_data is the picture as a "data:image/..." address,
+-- already made small by the game. It becomes a message of its own.
+create or replace function public.send_picture(p_username text, p_token text, p_name text, p_data text)
+returns json
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_me text := logged_in_player(p_username, p_token);
+  v_other text := player_called(coalesce(p_name, ''));
+  v_picture bigint;
+  v_id bigint;
+begin
+  if not exists (select 1 from friends where owner = v_me and other = v_other and state = 'friends') then
+    raise exception 'You can only send pictures to your friends.';
+  end if;
+  if coalesce(p_data, '') !~ '^data:image/(jpeg|webp|png);base64,[A-Za-z0-9+/]+=*$' then
+    raise exception 'That is not a picture.';
+  end if;
+  if length(p_data) > 100000 then
+    raise exception 'That picture is too big.';
+  end if;
+  if (select count(*) from pictures where sender = v_me and sent_at > now() - interval '1 day') >= 10 then
+    raise exception 'You can send 10 pictures a day. Try again tomorrow.';
+  end if;
+  if (select count(*) from messages where sender = v_me and sent_at > now() - interval '1 minute') >= 20 then
+    raise exception 'That is a lot of messages. Wait a moment.';
+  end if;
+
+  insert into pictures (sender, receiver, data) values (v_me, v_other, p_data) returning id into v_picture;
+  insert into messages (sender, receiver, body, picture) values (v_me, v_other, '', v_picture) returning id into v_id;
+  delete from pictures where sent_at < now() - interval '7 days';
+  return json_build_object('id', v_id);
+end;
+$$;
+
+
+-- Gives back one picture: { data } for the two players of its chat, { data: null }
+-- for anybody else or a picture that has gone. The game asks once for each picture
+-- it shows, and keeps it until the page is closed.
+create or replace function public.get_picture(p_username text, p_token text, p_id bigint)
+returns json
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_me text := logged_in_player(p_username, p_token);
+begin
+  return json_build_object('data',
+    (select data from pictures where id = p_id and (sender = v_me or receiver = v_me)));
+end;
+$$;
+
+
 -- The game calls this every 20 seconds, and every 3 seconds while a chat is open.
 -- It marks the player as online and gives back:
 --   name      their own player name (null until they pick one)
 --   friends   every friend and request: their player name, the state, how many messages from them are
 --             unread, and (for friends only) how many seconds ago their game last checked
 --             in and the class they are playing, its level and best floor
---   messages  if p_chat is a friend's player name: the messages between the two of you.
+--   messages  if p_chat is a friend's player name: the messages between the two of you
+--             (a picture's message has an empty body and the picture's number; once the
+--             picture has gone, an empty body and no number).
 --             With p_after 0 (a chat just opened), the newest 50. Otherwise the 50 that
 --             follow message number p_after, oldest first: if 50 come back, there may be
 --             more, and the game asks again. The messages given back are marked as read.
@@ -454,7 +533,7 @@ begin
 
   if exists (select 1 from friends where owner = v_me and other = v_other and state = 'friends') then
     select coalesce(json_agg(m order by m.id), '[]') into v_messages from (
-      select id, sender = v_me as mine, body, sent_at as at from messages
+      select id, sender = v_me as mine, body, picture, sent_at as at from messages
       where ((sender = v_me and receiver = v_other) or (sender = v_other and receiver = v_me)) and id > coalesce(p_after, 0)
       order by case when coalesce(p_after, 0) = 0 then -id else id end
       limit 50
@@ -486,4 +565,6 @@ grant execute on function public.set_player_name(text, text, text) to anon;
 grant execute on function public.add_friend(text, text, text) to anon;
 grant execute on function public.remove_friend(text, text, text) to anon;
 grant execute on function public.send_message(text, text, text, text) to anon;
+grant execute on function public.send_picture(text, text, text, text) to anon;
+grant execute on function public.get_picture(text, text, bigint) to anon;
 grant execute on function public.social_poll(text, text, text, bigint) to anon;

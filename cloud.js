@@ -68,6 +68,7 @@ function cloudLoggedIn() {
 // Runs one of the functions from cloud-setup.sql and gives back its answer.
 // If the server says no, this throws an error whose message is the reason.
 async function cloudCall(name, details) {
+  let body = JSON.stringify(details);
   let answer = await fetch(cloudUrl + "/rest/v1/rpc/" + name, {
     method: "POST",
     headers: {
@@ -75,10 +76,11 @@ async function cloudCall(name, details) {
       "Authorization": "Bearer " + cloudKey,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(details),
+    body: body,
 
-    // Lets a save that is sent as the tab closes still arrive
-    keepalive: true
+    // Lets a save that is sent as the tab closes still arrive. (Browsers refuse it
+    // for anything over 64 KB, such as a chat picture, which is then sent without it.)
+    keepalive: body.length < 60000
   });
 
   let result = await answer.json();

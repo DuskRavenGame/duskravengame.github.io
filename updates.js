@@ -13,6 +13,15 @@
 
 const gameUpdates = [
   {
+    version: "20261022a",
+    title: "Chat only, GIFs and screenshots",
+    changes: [
+      "A Chat only button on an open chat. The chat fills the whole window and the fight under it stops moving, so you can make the browser window small and keep it in a corner of your screen. The game keeps playing. Back to the game, or Close the chat, puts everything back.",
+      "GIFs in chat: send a GIF's link from Giphy or Tenor (on the GIF, right-click and Copy image address, or copy a Giphy page's link) and it shows as the GIF.",
+      "Screenshots in chat: paste one into the chat with Ctrl+V, or press Picture to pick one. It is made small, shown to you first, and sent when you press Send picture. Up to 10 pictures a day, and they are kept for 7 days."
+    ]
+  },
+  {
     version: "20261017c",
     title: "The legendary Beast Tamer",
     changes: [
