@@ -13,6 +13,16 @@
 
 const gameUpdates = [
   {
+    version: "20261022b",
+    title: "Beast Tamer: every choice counts",
+    changes: [
+      "Bond now works with the Bear. It used to keep you so safe that Bond almost never counted. Now part of what a guarding pet takes for you counts as health missing, so Bond always gives a guarding pet something. Your stats show how much.",
+      "Care is now Bond's other side: +3.5% pet damage a level while your pet has more than half its health. Bond is for a pet that fights hurt, Care for one you keep whole. It used to give health, which made Bond weaker and was worth less than leaving it unbought.",
+      "Might now also brings a Physical pet's skill back 3% faster a level, up to every 4 turns instead of 6, as Arcana does for Magic pets' spells.",
+      "Stronger perks that were behind the others at their milestone: Beastlord (attack x1.2), Old Growth (attack x1.3), Wary (attack x1.35), Ironwood Heart (attack x1.4), Kindred (attack x1.2, from +25%), Fenrir's Brood (bites x1.4) and Ancient One (attack x1.7)."
+    ]
+  },
+  {
     version: "20261022a",
     title: "Chat only, GIFs and screenshots",
     changes: [

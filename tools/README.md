@@ -117,6 +117,9 @@ the start, and `allpets` climbs once with every pet. Its pets should stay within
 50 floors of each other in 100 hours. (Not `pet=`: the tower option `t=` would match
 inside it.)
 
+With `edge`, a Tamer also gets a "bond:" line: how many tenths of its health it is
+missing on its pet's turns at the deepest floors, which is all Bond reads.
+
 ```
 bash tools/run.sh sim "h=100,ascend,allpets,c=beasttamer"
 bash tools/run.sh sim "h=100,ascend,lives,bond=hawk,c=beasttamer"

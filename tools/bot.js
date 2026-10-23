@@ -397,6 +397,7 @@ function run(className, weaponType, stanceId, hours, ascending, keepAccount) {
   let deepestRun = null;
 
   edgeFights = { monster: [], boss: [], lostTurns: [], hitShare: [] };
+  bondSeen = [];
   burnSeen = {};
   snapFloor = 0;
   snapClass = "";
@@ -521,6 +522,11 @@ function run(className, weaponType, stanceId, hours, ascending, keepAccount) {
     }
     out.push("    edge: ordinary fight " + median(edgeFights.monster) + " turns (" + edgeFights.monster.length + " won), boss " + median(edgeFights.boss) + " turns (" + edgeFights.boss.length
       + " won), an ordinary hit takes on average " + (hit * 100).toFixed(1) + "% of health = " + (hit > 0 ? (1 / hit).toFixed(1) : "-") + " hits to die (a tenth of the hits take under " + (quantile(edgeFights.hitShare, 0.1) * 100).toFixed(1) + "%, a tenth over " + (quantile(edgeFights.hitShare, 0.9) * 100).toFixed(1) + "%, " + edgeFights.hitShare.length + " hits), lost fights lasted " + median(edgeFights.lostTurns) + " turns (" + edgeFights.lostTurns.length + " lost)");
+    if (bondSeen.length > 0) {
+      let tenths = bondSeen.reduce(function (sum, t) { return sum + t; }, 0) / bondSeen.length;
+      let hurt = bondSeen.filter(function (t) { return t > 0; }).length / bondSeen.length;
+      out.push("    bond: on its pet's turns the tamer is missing " + tenths.toFixed(2) + " tenths of its health on average (hurt enough for Bond on " + Math.round(hurt * 100) + "% of them), so Bond is x" + (1 + tenths * totalBonus("bond") * multiplier("bond")).toFixed(2) + " with what it ended with");
+    }
   }
   for (let probe of probes) {
     out.push("    " + probe);
@@ -592,6 +598,18 @@ if (EDGE) {
       edgeFights.hitShare.push(amount / playerMaxHp);
     }
     realNoteTaken(amount);
+  };
+}
+
+// ("edge" for the Beast Tamer: how hurt it is on its pet's turns, which is all Bond reads)
+let bondSeen = [];
+if (EDGE && classes.beasttamer !== undefined) {
+  let realTamerAttack = classes.beasttamer.attack;
+  classes.beasttamer.attack = function () {
+    if (edgeOn && floor >= bestFloor - 10) {
+      bondSeen.push(bondTenths());
+    }
+    realTamerAttack();
   };
 }
 

@@ -25,6 +25,9 @@
 //   maulPower    bear: extra damage of the maul                (0.05 means +5% of attack)
 //   stunChance   bear: chance the maul stuns                   (0.1 means +10%)
 //   guard        bear: share of every hit the bear takes       (0.05 means +5%)
+//   skillHaste   physical pet: its skill comes back faster     (0.03 means 3% faster)
+//   care         extra pet damage while it has more than half
+//                its health (Bond's other side)                 (0.05 means +5%)
 //   critChance   hawk: chance of a critical dive               (0.1 means +10%)
 //   critPower    hawk: extra damage of a critical dive         (0.1 means +10%)
 // and the words of its keystones (floor 51; see "Keystones" in data.js):
@@ -87,9 +90,15 @@ classes.beasttamer = {
   skills: [
     // (the ids are the old ones, kept for old saves: "wolfMastery" is Instinct, and so on)
     { id: "command", name: "Command", text: "+3% your pet's attack", bonus: { attackPercent: 0.03 }, cost: 1 },
-    { id: "hardiness", name: "Care", text: "+3% your pet's health and +1.5% its attack", bonus: { healthPercent: 0.03, attackPercent: 0.015 }, cost: 1 },
+    // (Care was +3% health and +1.5% attack, and a tamer climbed as deep or deeper with it
+    // never bought: health is worth little, and the less hurt the pet is, the less its Bond
+    // gives. So Care is Bond's other side now: one for a pet that is kept whole, one for a
+    // pet that fights hurt. 22 October 2026)
+    { id: "hardiness", name: "Care", text: "Care: +3.5% pet damage while it has more than half its health", bonus: { care: 0.035 }, cost: 1 },
     { id: "bond", name: "Bond", text: "Bond: +3.5% pet damage for every 10% of its health that is missing", bonus: { bond: 0.035 }, cost: 1 },
-    { id: "bearMastery", name: "Might", text: "Physical: grown by Might. Its blow deals +9% of your attack more, and +1% stun chance", bonus: { maulPower: 0.09, stunChance: 0.01 }, cost: 1 },
+    // (Might was only blow damage, which the Grizzled boon also gives, so it did nothing a
+    // bear could feel: it came back faster too, as Arcana's spells do. 22 October 2026)
+    { id: "bearMastery", name: "Might", text: "Physical: grown by Might. Its blow deals +9% of your attack more, +1% stun chance, and its skill comes back 3% faster", bonus: { maulPower: 0.09, stunChance: 0.01, skillHaste: 0.03 }, cost: 1 },
     { id: "hawkMastery", name: "Arcana", text: "Magic: grown by Arcana. +4.5% spell damage, spells come back 3% faster, and +2% critical chance", bonus: { spellPower: 0.045, spellHaste: 0.03, critChance: 0.02 }, cost: 1 },
     { id: "wolfMastery", name: "Instinct", text: "Primal: grown by Instinct. Bites deal +1.5% of your attack more, and bleeding +5%", bonus: { bitePower: 0.015, dotPower: 0.05 }, cost: 1 }
   ],
@@ -128,8 +137,10 @@ classes.beasttamer = {
     {
       floor: 50,
       perks: [
-        { id: "beastlord", name: "Beastlord", text: "attack x1.1, and +0.5% damage for every kill this run (up to +100%)", bonus: { killStreak: 0.005 }, multiply: { attack: 1.1 } },
-        { id: "oldGrowth", name: "Old Growth", text: "health x1.5, armor x1.4 and attack x1.2", multiply: { health: 1.5, armor: 1.4, attack: 1.2 } },
+        // (Beastlord and Old Growth were 20 to 50 floors behind each path's own perk here, so
+        // each has more attack: x1.2 and x1.3, from x1.1 and x1.2. 22 October 2026)
+        { id: "beastlord", name: "Beastlord", text: "attack x1.2, and +0.5% damage for every kill this run (up to +100%)", bonus: { killStreak: 0.005 }, multiply: { attack: 1.2 } },
+        { id: "oldGrowth", name: "Old Growth", text: "health x1.5, armor x1.4 and attack x1.3", multiply: { health: 1.5, armor: 1.4, attack: 1.3 } },
         { id: "direPack", name: "Dire Pack", text: "Primal: bite damage x1.5", multiply: { wolf: 1.5 } },
         { id: "caveBear", name: "Cave Bear", text: "Physical: blow damage x1.8", multiply: { bear: 1.8 } },
         { id: "stormHawk", name: "Storm Hawk", text: "Magic: critical spell damage x1.8", multiply: { hawkCrit: 1.8 } },
@@ -152,22 +163,29 @@ classes.beasttamer = {
       floor: 75,
       perks: [
         { id: "apex", name: "Apex", text: "attack x1.3, all your damage +75% against bosses, and your abilities are ready a fifth sooner", bonus: { bossSlayer: 0.75, quickHands: 0.2 }, multiply: { attack: 1.3 } },
-        { id: "ironwoodHeart", name: "Ironwood Heart", text: "health x1.6, attack x1.2, and once a run survive a killing blow on half health", bonus: { secondWind: 1 }, multiply: { health: 1.6, attack: 1.2 } },
+        // (attack x1.2, then x1.3, was last or near it for every path. 22 October 2026)
+        { id: "ironwoodHeart", name: "Ironwood Heart", text: "health x1.6, attack x1.4, and once a run survive a killing blow on half health", bonus: { secondWind: 1 }, multiply: { health: 1.6, attack: 1.4 } },
         { id: "wolfKing", name: "Wolf King", text: "Primal: attack x1.3, one more bite a turn, and bites deal +10% of your attack more", bonus: { packSize: 1, bitePower: 0.1 }, multiply: { attack: 1.3 } },
         { id: "ursine", name: "Ursine", text: "Physical: attack x1.3, its blow deals +80% of your attack more, and +8% stun chance", bonus: { maulPower: 0.8, stunChance: 0.08 }, multiply: { attack: 1.3 } },
         { id: "skyHunter", name: "Sky Hunter", text: "Magic: attack x1.3, +10% critical spell chance and +80% critical damage", bonus: { critChance: 0.1, critPower: 0.8 }, multiply: { attack: 1.3 } },
-        { id: "kindred", name: "Kindred", text: "+25% attack, and Bond: +10% companion damage for every 10% of your health that is missing", bonus: { attackPercent: 0.25, bond: 0.1 } },
-        { id: "wary", name: "Wary", text: "You take 25% less damage, and attack x1.2", multiply: { damageTaken: 0.75, attack: 1.2 } }
+        // (+25% attack was added to every other attack bonus, so it was worth far less than it
+        // read: last or near it for every path. 22 October 2026)
+        { id: "kindred", name: "Kindred", text: "attack x1.2, and Bond: +10% companion damage for every 10% of your health that is missing", bonus: { bond: 0.1 }, multiply: { attack: 1.2 } },
+        // (Wary was attack x1.2, and came last at this milestone for every path: taking less
+        // damage is worth little to a tamer, and costs it Bond. 22 October 2026)
+        { id: "wary", name: "Wary", text: "You take 25% less damage, and attack x1.35", multiply: { damageTaken: 0.75, attack: 1.35 } }
       ]
     },
     {
       floor: 100,
       perks: [
-        { id: "fenrir", name: "Fenrir's Brood", text: "Primal: bite damage x1.15 again", multiply: { wolf: 1.15 } },
+        // (x1.15 was 32 floors behind One Heart for the wolf pack. 22 October 2026)
+        { id: "fenrir", name: "Fenrir's Brood", text: "Primal: bite damage x1.4 again", multiply: { wolf: 1.4 } },
         { id: "ursaMajor", name: "Ursa Major", text: "Physical: blow damage x2.4 again", multiply: { bear: 2.4 } },
         { id: "roc", name: "Roc", text: "Magic: critical spell damage x1.8 again", multiply: { hawkCrit: 1.8 } },
         { id: "oneHeart", name: "One Heart", text: "Bond x3 again", multiply: { bond: 3 } },
-        { id: "ancientOne", name: "Ancient One", text: "health x2, armor x1.5, attack x1.4, and you heal 2% of your health every turn of a fight", bonus: { prayer: 0.02 }, multiply: { health: 2, armor: 1.5, attack: 1.4 } }
+        // (attack x1.4 came last at this milestone for every path, 11 to 55 floors behind. 22 October 2026)
+        { id: "ancientOne", name: "Ancient One", text: "health x2, armor x1.5, attack x1.7, and you heal 2% of your health every turn of a fight", bonus: { prayer: 0.02 }, multiply: { health: 2, armor: 1.5, attack: 1.7 } }
       ]
     }
   ],
@@ -230,9 +248,13 @@ const hawkCrit = 2.0;         // a critical spell multiplies its damage by this
 const spellTurn = 0.5;        // a turn of a spell's damage, as a share of your attack. (Storm
                               // Dive, 3 turns, was 3 dives at first: the hawk then climbed 90
                               // floors past the bear, so it is 2 dives now. 17 October 2026)
+const bondGuard = 0.2;        // for Bond, this share of a guarding pet's guard counts as health missing
+                              // (0.2: a bear's Bond is about the wolf pack's. With 1 it climbed 115
+                              // floors deeper, with 0.5 about 70. 22 October 2026)
 const alphaBonus = 1.3;       // the Alpha keystone's one wolf bites for the whole pack, times this
 // Arcana makes a magic pet's spells come back faster, but at most this much faster (0.5:
 // Storm Dive every 2 turns, not 3). Haste past it adds to the spell's damage instead.
+// Might does the same for a physical pet's skill (every 4 turns, not 6), with no extra past it.
 // (Uncapped, a deep hawk cast every turn, and Storm Eye made every attack miss.)
 const petHasteMost = 0.5;
 
@@ -276,8 +298,24 @@ function tamerDamageTypes() {
 // Bond: the pet fights harder the more hurt it is. This is what its damage is
 // multiplied by: every full 10% of health missing adds the bond.
 function tamerBond() {
-  let tenths = Math.floor((1 - playerHp / playerMaxHp) * 10 + 0.0001);
-  return 1 + Math.max(0, tenths) * totalBonus("bond") * multiplier("bond");
+  return 1 + bondTenths() * totalBonus("bond") * multiplier("bond");
+}
+
+// Care: the pet fights harder while it is kept whole (more than half its health)
+function tamerCare() {
+  if (playerHp <= playerMaxHp / 2) {
+    return 1;
+  }
+  return 1 + totalBonus("care");
+}
+
+// The tenths of health missing, for Bond: every full tenth, and a pet that guards you
+// adds part of the share of every hit it takes for you (bondGuard), as tenths too.
+// (Without that, Bond did nothing for the bear: it kept the tamer so whole that at the
+// deepest floors Bond counted on 4% of its turns, against 33% for the wolf pack. The
+// bot's "edge" prints this. 22 October 2026)
+function bondTenths() {
+  return Math.max(0, Math.floor((1 - playerHp / playerMaxHp) * 10 + 0.0001)) + tamerGuard() * bondGuard * 10;
 }
 
 // How many bites a Primal pet lands a turn
@@ -316,9 +354,16 @@ function tamerQuickFight() {
   return Math.max(cruiseTurns, Math.ceil(petEvery() / (1 + petHaste())));
 }
 
-// How much faster a magic pet's spells come back (Arcana's "spellHaste", up to petHasteMost)
+// How much faster its skill comes back, up to petHasteMost: a magic pet's spells by
+// Arcana's "spellHaste", a physical pet's skill by Might's "skillHaste"
 function petHaste() {
-  return Math.min(petHasteMost, totalBonus("spellHaste"));
+  if (petKit().path === "Magic") {
+    return Math.min(petHasteMost, totalBonus("spellHaste"));
+  }
+  if (petKit().path === "Physical") {
+    return Math.min(petHasteMost, totalBonus("skillHaste"));
+  }
+  return 0;
 }
 
 // A skill's hit: anything past the kill is kept for the next monster
@@ -359,7 +404,7 @@ function petCastSpell(turns, armorShare) {
 // The tamer never attacks: the pet does everything, and the tamer's levels, skills and
 // perks are what make it stronger. Its plain attack is its path's; its skill is its own.
 function tamerAttack() {
-  petPower = playerAttack * tamerBond() * (1 + totalBonus("rampTurn") * fightTurns) * (1 + totalBonus("armorToDamage") * armorShareBlocked());
+  petPower = playerAttack * tamerBond() * tamerCare() * (1 + totalBonus("rampTurn") * fightTurns) * (1 + totalBonus("armorToDamage") * armorShareBlocked());
   // ("thirdHit": every third turn of a fight it strikes harder)
   if (totalBonus("thirdHit") > 0 && fightTurns % 3 === 0) {
     petPower = petPower * (1 + totalBonus("thirdHit"));
@@ -367,7 +412,7 @@ function tamerAttack() {
   let power = petPower;
   let type = petKit().type;
 
-  petCharge = petCharge + 1 + (petKit().path === "Magic" ? petHaste() : 0);
+  petCharge = petCharge + 1 + petHaste();
   // ("lowHpHaste": below half health its skill comes back faster)
   if (playerHp < playerMaxHp / 2) {
     petCharge = petCharge + totalBonus("lowHpHaste");
@@ -447,7 +492,9 @@ function tamerDotPerStack() {
 }
 
 function tamerStatLine() {
-  return "Bond: your pet deals +" + percent(totalBonus("bond") * multiplier("bond")) + " damage for every 10% of its health that is missing (right now x" + big(Math.round(tamerBond() * 100) / 100) + ")";
+  let guarding = tamerGuard() > 0 ? ", and its guard counts as " + percent(tamerGuard() * bondGuard) + " missing" : "";
+  let care = totalBonus("care") > 0 ? ". Care: +" + percent(totalBonus("care")) + " damage while it has more than half its health (" + (tamerCare() > 1 ? "on" : "off") + " right now)" : "";
+  return "Bond: your pet deals +" + percent(totalBonus("bond") * multiplier("bond")) + " damage for every 10% of its health that is missing" + guarding + " (right now x" + big(Math.round(tamerBond() * 100) / 100) + ")" + care;
 }
 
 // What the bonded pet does, with its kit
