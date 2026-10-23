@@ -1,5 +1,5 @@
 -- =====================================================================
---  Online saves for Lloegrys Idle
+--  Online saves for Duskraven
 -- =====================================================================
 -- HOW TO USE THIS FILE
 --   1. In your Supabase project, open "SQL Editor" (left-hand menu).

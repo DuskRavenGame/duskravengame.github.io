@@ -25,10 +25,10 @@ PRE=""
 #  one to come free if they are all taken. However many runs are started
 #  together, no more than MAX_EDGE browsers are ever open.
 #
-#  To change the limit for one command:  LLOEGRYS_MAX_EDGE=2 bash tools/run.sh ...
+#  To change the limit for one command:  DUSKRAVEN_MAX_EDGE=2 bash tools/run.sh ...
 # ---------------------------------------------------------------------
-MAX_EDGE="${LLOEGRYS_MAX_EDGE:-2}"
-SLOTS="${TMPDIR:-/tmp}/lloegrys-edge-slots"
+MAX_EDGE="${DUSKRAVEN_MAX_EDGE:-2}"
+SLOTS="${TMPDIR:-/tmp}/duskraven-edge-slots"
 SLOT=""
 
 function waitForSlot() {
@@ -72,7 +72,7 @@ elif [ "$1" = "check" ]; then
   {
     echo "window.savedBefore = $(cat "$2");"
     echo "window.savedBefore.lastTick = Date.now();"
-    echo "localStorage.setItem(\"lloegrys-idle-save-3\", JSON.stringify(window.savedBefore));"
+    echo "localStorage.setItem(\"duskraven-save-3\", JSON.stringify(window.savedBefore));"
     echo "window.onerror = function (m, f, l) { window.pageErrors = (window.pageErrors || \"\") + m + \" @\" + f + \":\" + l + \"\\n\"; };"
   } > "$PRE"
   sed "s#<script>const gameVersion#<script src=\"$PRE\"></script><script>const gameVersion#; s#</body>#<script src=\"tools/check.js\"></script></body>#" index.html > "$PAGE"

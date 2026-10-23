@@ -13,6 +13,14 @@
 
 const gameUpdates = [
   {
+    version: "20261023a",
+    title: "The game is now Duskraven",
+    changes: [
+      "The game has a new name, Duskraven, and a new address: countosiris.github.io/Duskraven/ (with a capital D). The old address no longer works.",
+      "Your save, settings and online account come with you. Nothing to do."
+    ]
+  },
+  {
     version: "20261022b",
     title: "Beast Tamer: every choice counts",
     changes: [

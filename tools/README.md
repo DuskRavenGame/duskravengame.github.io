@@ -6,7 +6,7 @@ They need Microsoft Edge (installed on Windows) and Git Bash.
 Every run opens its own hidden Edge. `tools/run.sh` lets only 2 be open at once and
 makes the rest wait their turn, because many at once crashed the PC, and 3 ate the CPU
 (the owner set 2 on 17 October 2026). To lower it for one command:
-`LLOEGRYS_MAX_EDGE=1 bash tools/run.sh ...`
+`DUSKRAVEN_MAX_EDGE=1 bash tools/run.sh ...`
 
 ## The balance bot
 

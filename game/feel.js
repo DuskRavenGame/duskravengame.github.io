@@ -245,7 +245,7 @@ function checkTabUnlocks() {
 // ----- Settings -----
 // Settings belong to the device, not to the save: they are kept under their own
 // name in the browser, and a save code does not carry them.
-const settingsName = "lloegrys-idle-settings";
+const settingsName = "duskraven-settings";
 let animationsOn = true;
 
 // CHAT ONLY (the button on the chat, setChatOnly in friends.js): the open chat covers

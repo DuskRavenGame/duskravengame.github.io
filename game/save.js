@@ -30,7 +30,37 @@
 //
 // Changing saveName makes the game ignore every existing save: everyone starts again.
 // That is the "reset" to warn players about. Avoid it.
-const saveName = "lloegrys-idle-save-3";
+const saveName = "duskraven-save-3";
+
+// ----- The game's old name -----
+// Until 20261023a the game kept everything in the browser under names starting
+// "lloegrys-idle-" (the save, settings, account, device and tab marks). Now they start
+// "duskraven-". This copies each old one across once, the first time a player opens
+// the new version, and then removes the old one. It runs here because save.js loads
+// before everything else that reads the browser (feel.js, start.js, cloud.js).
+// An old one is only removed once its copy is safely written.
+function moveOldNames() {
+  let oldStart = "lloegrys-idle-";
+  let oldNames = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    let name = localStorage.key(i);
+    if (name !== null && name.startsWith(oldStart)) {
+      oldNames.push(name);
+    }
+  }
+  for (let name of oldNames) {
+    let newName = "duskraven-" + name.slice(oldStart.length);
+    try {
+      if (localStorage.getItem(newName) === null) {
+        localStorage.setItem(newName, localStorage.getItem(name));
+      }
+      localStorage.removeItem(name);
+    } catch (problem) {
+      // The browser is full: keep the old one, so nothing is lost
+    }
+  }
+}
+moveOldNames();
 const saveVersion = 3;
 let classSaves = {};
 

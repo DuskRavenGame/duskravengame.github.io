@@ -15,7 +15,7 @@
 
 // Where the browser remembers who is logged in. This is kept apart from the save,
 // so that loading a save code or resetting the save does not log anyone out.
-const accountName = "lloegrys-idle-account";
+const accountName = "duskraven-account";
 
 let cloudUser = "";         // the username logged in on this browser ("" for nobody)
 let cloudToken = "";        // the secret that keeps this browser logged in
@@ -35,7 +35,7 @@ const cloudEvery = 60;      // seconds between sending the save
 // (Before this, a refresh could trap the game in a loop: the closing page sent a save,
 // the new page saw a revision it did not know, took the online save and reloaded, and
 // the reload sent a save as it closed. October 2026.)
-const deviceName = "lloegrys-idle-device";
+const deviceName = "duskraven-device";
 let cloudDevice = localStorage.getItem(deviceName);
 if (cloudDevice === null) {
   cloudDevice = Date.now() + "-" + Math.random().toString(36).slice(2);
@@ -45,7 +45,7 @@ if (cloudDevice === null) {
 // A LAST DEFENCE AGAINST RELOADING FOREVER. Taking an online save reloads the page. If
 // that has just happened (within reloadGapSeconds, remembered for this tab only), the
 // page is not reloaded again whatever the server says: it keeps the save it has.
-const reloadMarkName = "lloegrys-idle-took-cloud-save";
+const reloadMarkName = "duskraven-took-cloud-save";
 const reloadGapSeconds = 30;
 
 function tookCloudSaveJustNow() {

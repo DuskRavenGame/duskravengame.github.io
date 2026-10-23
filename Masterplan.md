@@ -1,4 +1,4 @@
-# Lloegrys Idle: Masterplan
+# Duskraven: Masterplan
 
 The one-page view of what this game is, where it stands, and where it is going.
 Each section points to a design file in `docs/design/` that holds the detail.

@@ -1,4 +1,4 @@
-# Lloegrys Idle
+# Duskraven
 
 A plain HTML, CSS and JavaScript idle game with no build step. Friends play the live
 site, so old saves must always load.

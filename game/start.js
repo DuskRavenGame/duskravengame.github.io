@@ -154,7 +154,7 @@ setInterval(checkForNewVersion, 5 * 60 * 1000);
 // Two tabs of the game would each save over the other every second, and whichever
 // closed last would win. So the tab opened LAST plays: it writes its own mark in the
 // browser, every older tab sees that mark change, stops, and says so.
-const tabMarkName = "lloegrys-idle-tab";
+const tabMarkName = "duskraven-tab";
 const tabMark = Date.now() + "-" + Math.random();
 
 localStorage.setItem(tabMarkName, tabMark);
